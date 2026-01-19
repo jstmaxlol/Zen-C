@@ -1415,6 +1415,18 @@ ASTNode *copy_ast_replacing(ASTNode *n, const char *p, const char *c, const char
             free(n1);
             n1 = n2;
         }
+        if (os && ns)
+        {
+            int os_len = strlen(os);
+            if (strncmp(n1, os, os_len) == 0 && n1[os_len] == '_' && n1[os_len + 1] == '_')
+            {
+                char *suffix = n1 + os_len;
+                char *n3 = xmalloc(strlen(ns) + strlen(suffix) + 1);
+                sprintf(n3, "%s%s", ns, suffix);
+                free(n1);
+                n1 = n3;
+            }
+        }
         new_node->var_ref.name = n1;
     }
     break;
@@ -1554,6 +1566,33 @@ FuncSig *find_func(ParserContext *ctx, const char *name)
         }
         c = c->next;
     }
+
+    // Fallback: Check current_impl_methods (siblings in the same impl block)
+    if (ctx && ctx->current_impl_methods)
+    {
+        ASTNode *n = ctx->current_impl_methods;
+        while (n)
+        {
+            if (n->type == NODE_FUNCTION && strcmp(n->func.name, name) == 0)
+            {
+                // Found sibling method. Construct a temporary FuncSig.
+                FuncSig *sig = xmalloc(sizeof(FuncSig));
+                sig->name = n->func.name;
+                sig->decl_token = n->token;
+                sig->total_args = n->func.arg_count;
+                sig->defaults = n->func.defaults;
+                sig->arg_types = n->func.arg_types;
+                sig->ret_type = n->func.ret_type_info;
+                sig->is_varargs = n->func.is_varargs;
+                sig->is_async = n->func.is_async;
+                sig->must_use = 0;
+                sig->next = NULL;
+                return sig;
+            }
+            n = n->next;
+        }
+    }
+
     return NULL;
 }
 

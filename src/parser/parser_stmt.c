@@ -3415,9 +3415,14 @@ ASTNode *parse_impl(ParserContext *ctx, Lexer *l)
             {
                 zpanic_at(lexer_peek(l), "Expected {");
             }
+            char *full_struct_name = xmalloc(strlen(name1) + strlen(gen_param) + 3);
+            sprintf(full_struct_name, "%s<%s>", name1, gen_param);
+
             ASTNode *h = 0, *tl = 0;
+            ctx->current_impl_methods = NULL;
             while (1)
             {
+                ctx->current_impl_methods = h;
                 skip_comments(l);
                 if (lexer_peek(l).type == TOK_RBRACE)
                 {
@@ -3433,9 +3438,27 @@ ASTNode *parse_impl(ParserContext *ctx, Lexer *l)
                     free(f->func.name);
                     f->func.name = mangled;
 
-                    char *na = patch_self_args(f->func.args, name1);
+                    // Update args string
+                    char *na = patch_self_args(f->func.args, full_struct_name);
                     free(f->func.args);
                     f->func.args = na;
+
+                    // Manual Type construction for self: Foo<T>*
+                    if (f->func.arg_count > 0 && f->func.param_names &&
+                        strcmp(f->func.param_names[0], "self") == 0)
+                    {
+                        Type *t_struct = type_new(TYPE_STRUCT);
+                        t_struct->name = xstrdup(name1);
+                        t_struct->arg_count = 1;
+                        t_struct->args = xmalloc(sizeof(Type *));
+                        t_struct->args[0] = type_new(TYPE_GENERIC);
+                        t_struct->args[0]->name = xstrdup(gen_param);
+
+                        Type *t_ptr = type_new(TYPE_POINTER);
+                        t_ptr->inner = t_struct;
+
+                        f->func.arg_types[0] = t_ptr;
+                    }
 
                     if (!h)
                     {
@@ -3459,9 +3482,27 @@ ASTNode *parse_impl(ParserContext *ctx, Lexer *l)
                         sprintf(mangled, "%s__%s", name1, f->func.name);
                         free(f->func.name);
                         f->func.name = mangled;
-                        char *na = patch_self_args(f->func.args, name1);
+
+                        char *na = patch_self_args(f->func.args, full_struct_name);
                         free(f->func.args);
                         f->func.args = na;
+
+                        if (f->func.arg_count > 0 && f->func.param_names &&
+                            strcmp(f->func.param_names[0], "self") == 0)
+                        {
+                            Type *t_struct = type_new(TYPE_STRUCT);
+                            t_struct->name = xstrdup(name1);
+                            t_struct->arg_count = 1;
+                            t_struct->args = xmalloc(sizeof(Type *));
+                            t_struct->args[0] = type_new(TYPE_GENERIC);
+                            t_struct->args[0]->name = xstrdup(gen_param);
+
+                            Type *t_ptr = type_new(TYPE_POINTER);
+                            t_ptr->inner = t_struct;
+
+                            f->func.arg_types[0] = t_ptr;
+                        }
+
                         if (!h)
                         {
                             h = f;
@@ -3482,6 +3523,7 @@ ASTNode *parse_impl(ParserContext *ctx, Lexer *l)
                     lexer_next(l);
                 }
             }
+            free(full_struct_name);
             // Register Template
             ASTNode *n = ast_create(NODE_IMPL);
             n->impl.struct_name = name1;

@@ -243,6 +243,7 @@ struct ParserContext
 
     // Config/State
     char *current_impl_struct;
+    ASTNode *current_impl_methods; // Head of method list for current impl block
 
     // Internal tracking
     DeprecatedFunc *deprecated_funcs;

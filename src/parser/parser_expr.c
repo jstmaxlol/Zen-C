@@ -2497,15 +2497,101 @@ char *resolve_struct_name_from_type(ParserContext *ctx, Type *t, int *is_ptr_out
     }
     else
     {
+        Type *struct_type = NULL;
         if (t->kind == TYPE_STRUCT)
         {
+            struct_type = t;
             struct_name = t->name;
             *is_ptr_out = 0;
         }
         else if (t->kind == TYPE_POINTER && t->inner->kind == TYPE_STRUCT)
         {
-            struct_name = t->inner->name;
+            struct_type = t->inner;
             *is_ptr_out = 1;
+        }
+
+        if (struct_type)
+        {
+            if (struct_type->args && struct_type->arg_count > 0 && struct_type->name)
+            {
+                // It's a generic type instance (e.g. Foo<T>).
+                // We must construct Foo_T, ensuring we measure SANITIZED length.
+                int len = strlen(struct_type->name) + 1;
+
+                // Pass 1: Calculate Length
+                for (int i = 0; i < struct_type->arg_count; i++)
+                {
+                    Type *arg = struct_type->args[i];
+                    if (arg)
+                    {
+                        char *s = type_to_string(arg);
+                        if (s)
+                        {
+                            char *clean = sanitize_mangled_name(s);
+                            if (clean)
+                            {
+                                len += strlen(clean) + 1; // +1 for '_'
+                                free(clean);
+                            }
+                            free(s);
+                        }
+                    }
+                }
+
+                char *mangled = xmalloc(len + 1);
+                strcpy(mangled, struct_type->name);
+
+                // Pass 2: Build String
+                for (int i = 0; i < struct_type->arg_count; i++)
+                {
+                    Type *arg = struct_type->args[i];
+                    if (arg)
+                    {
+                        char *arg_str = type_to_string(arg);
+                        if (arg_str)
+                        {
+                            char *clean = sanitize_mangled_name(arg_str);
+                            if (clean)
+                            {
+                                strcat(mangled, "_");
+                                strcat(mangled, clean);
+                                free(clean);
+                            }
+                            free(arg_str);
+                        }
+                    }
+                }
+                struct_name = mangled;
+                *allocated_out = mangled;
+            }
+            else if (struct_type->name && strchr(struct_type->name, '<'))
+            {
+                // Fallback: It's a generic type string. We need to mangle it.
+                char *tpl = xstrdup(struct_type->name);
+                char *args_ptr = strchr(tpl, '<');
+                if (args_ptr)
+                {
+                    *args_ptr = 0;
+                    args_ptr++;
+                    char *end = strrchr(args_ptr, '>');
+                    if (end)
+                    {
+                        *end = 0;
+                    }
+
+                    char *clean = sanitize_mangled_name(args_ptr);
+                    char *mangled = xmalloc(strlen(tpl) + strlen(clean) + 2);
+                    sprintf(mangled, "%s_%s", tpl, clean);
+                    struct_name = mangled;
+                    *allocated_out = mangled;
+                    free(clean);
+                }
+                free(tpl);
+            }
+            else
+            {
+                struct_name = struct_type->name;
+            }
         }
     }
     return struct_name;
