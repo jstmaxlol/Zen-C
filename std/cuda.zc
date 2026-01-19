@@ -1,7 +1,7 @@
 
 include <cuda_runtime.h>
 
-// Memory Management
+// Memory Management.
 
 /// Allocate device memory for n elements of type T.
 fn cuda_alloc<T>(n: usize) -> T* {
@@ -35,56 +35,42 @@ fn cuda_zero(ptr: void*, bytes: usize) {
     cudaMemset(ptr, 0, bytes);
 }
 
-// Synchronization
+// Synchronization.
 
 /// Synchronize the device (wait for all kernels to complete).
 fn cuda_sync() {
     cudaDeviceSynchronize();
 }
 
-// Thread Indexing (for use inside @global/@device functions)
+// Thread Indexing.
 
-/// Get 1D global thread index (blockIdx.x * blockDim.x + threadIdx.x).
-@device @inline
-fn thread_id() -> int {
-    var id: int;
-    id = blockIdx.x * blockDim.x + threadIdx.x;
-    return id;
-}
+// Grid/Block Dimensions
+@device @inline fn grid_dim_x() -> int { return gridDim.x; }
+@device @inline fn grid_dim_y() -> int { return gridDim.y; }
+@device @inline fn grid_dim_z() -> int { return gridDim.z; }
 
-/// Get 1D block index.
-@device @inline
-fn block_id() -> int {
-    var id: int;
-    id = blockIdx.x;
-    return id;
-}
+@device @inline fn block_dim_x() -> int { return blockDim.x; }
+@device @inline fn block_dim_y() -> int { return blockDim.y; }
+@device @inline fn block_dim_z() -> int { return blockDim.z; }
 
-/// Get 1D thread index within block.
-@device @inline
-fn local_id() -> int {
-    var id: int;
-    id = threadIdx.x;
-    return id;
-}
+// Block Indices
+@device @inline fn block_id_x() -> int { return blockIdx.x; }
+@device @inline fn block_id_y() -> int { return blockIdx.y; }
+@device @inline fn block_id_z() -> int { return blockIdx.z; }
 
-/// Get block size (number of threads per block).
-@device @inline
-fn block_size() -> int {
-    var size: int;
-    size = blockDim.x;
-    return size;
-}
+// Thread Indices
+@device @inline fn thread_id_x() -> int { return threadIdx.x; }
+@device @inline fn thread_id_y() -> int { return threadIdx.y; }
+@device @inline fn thread_id_z() -> int { return threadIdx.z; }
 
-/// Get grid size (number of blocks).
-@device @inline
-fn grid_size() -> int {
-    var size: int;
-    size = gridDim.x;
-    return size;
-}
+// Convenience.
+@device @inline fn thread_id() -> int { return blockIdx.x * blockDim.x + threadIdx.x; }
+@device @inline fn block_id() -> int { return blockIdx.x; }
+@device @inline fn local_id() -> int { return threadIdx.x; }
+@device @inline fn block_size() -> int { return blockDim.x; }
+@device @inline fn grid_size() -> int { return gridDim.x; }
 
-// Device Info
+// Device Info.
 
 /// Get the number of CUDA devices.
 fn cuda_device_count() -> int {
@@ -98,7 +84,7 @@ fn cuda_set_device(id: int) {
     cudaSetDevice(id);
 }
 
-// Error Handling
+// Error Handling.
 
 /// Get the last CUDA error code.
 fn cuda_last_error() -> int {

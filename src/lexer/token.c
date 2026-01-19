@@ -258,12 +258,30 @@ Token lexer_next(Lexer *l)
                     {
                         len++;
                     }
+                    // Consume float suffix (e.g. 1.0f)
+                    if (is_ident_start(s[len]))
+                    {
+                        while (is_ident_char(s[len]))
+                        {
+                            len++;
+                        }
+                    }
                     l->pos += len;
                     l->col += len;
                     return (Token){TOK_FLOAT, s, len, start_line, start_col};
                 }
             }
         }
+
+        // Consume integer suffix (e.g. 1u, 100u64, 1L)
+        if (is_ident_start(s[len]))
+        {
+            while (is_ident_char(s[len]))
+            {
+                len++;
+            }
+        }
+
         l->pos += len;
         l->col += len;
         return (Token){TOK_INT, s, len, start_line, start_col};
