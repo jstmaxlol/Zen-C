@@ -356,7 +356,11 @@ int main(int argc, char **argv)
         remove(outfile);
         zptr_plugin_mgr_cleanup();
         zen_trigger_global();
+#if defined(WIFEXITED) && defined(WEXITSTATUS)
+        return WIFEXITED(ret) ? WEXITSTATUS(ret) : ret;
+#else
         return ret;
+#endif
     }
 
     zptr_plugin_mgr_cleanup();
