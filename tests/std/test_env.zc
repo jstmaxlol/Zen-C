@@ -10,23 +10,16 @@ test "test_std_env_set_and_get" {
     assert(env_var.unwrap() == "ok1", "env_var should be ok1");
 }
 
-test "test_std_env_set_overwrite" {
+test "test_std_env_set_with_overwrite" {
     var res = Env::set("TEST2", "ok2");
     assert(res == EnvRes::OK(), "res should be EnvRes::OK()");
 
-    var res2 = Env::set("TEST2", "ok2-no-ovwr");
+    var res2 = Env::set("TEST2", "ok2-ovwr");
     assert(res2 == EnvRes::OK(), "res2 should be EnvRes::OK()");
 
     var env_var = Env::get("TEST2");
     assert(env_var.is_some(), "env_var should have a value");
-    assert(env_var.unwrap() == "ok2", "env_var should be ok2");
-
-    var res3 = Env::set_overwrite("TEST2", "ok2-with-ovwr");
-    assert(res3 == EnvRes::OK(), "res3 should be EnvRes::OK()");
-
-    var env_var2 = Env::get("TEST2");
-    assert(env_var2.is_some(), "env_var2 should have a value");
-    assert(env_var2.unwrap() == "ok2-with-ovwr", "env_var2 should be ok2-with-ovwr");
+    assert(env_var.unwrap() == "ok2-ovwr", "env_var should be ok2-ovwr");
 }
 
 test "test_std_env_get_dup" {

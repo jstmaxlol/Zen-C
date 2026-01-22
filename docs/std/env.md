@@ -53,14 +53,6 @@ Sets an env-var variable
 fn set(name: string, value: string) -> EnvRes
 ```
 
-### set_overwrite
-
-Overwrites an exisiting env-var / creates it if it doesn't exist
-
-```zc
-fn set_overwrite(name: string, value: string) -> EnvRes
-```
-
 ### unset
 
 Unsets an existing env-var
