@@ -591,22 +591,34 @@ static ASTNode *generate_derive_impls(ParserContext *ctx, ASTNode *strct, char *
                         }
                         char cmp[256];
 
-                        ASTNode *fdef = find_struct_def(ctx, ft);
-                        if (fdef && fdef->type == NODE_ENUM)
+                        // Detect pointer using type_info OR string check (fallback)
+                        int is_ptr = 0;
+                        if (f->type_info && f->type_info->kind == TYPE_POINTER)
                         {
-                            // Enum field: compare tags (pointer access via auto-deref)
+                            is_ptr = 1;
+                        }
+                        // Fallback: check if type string ends with '*'
+                        if (!is_ptr && ft && strchr(ft, '*'))
+                        {
+                            is_ptr = 1;
+                        }
+
+                        // Only look up struct def for non-pointer types
+                        ASTNode *fdef = is_ptr ? NULL : find_struct_def(ctx, ft);
+
+                        if (!is_ptr && fdef && fdef->type == NODE_ENUM)
+                        {
+                            // Enum field: compare tags
                             sprintf(cmp, "self.%s.tag == other.%s.tag", fn, fn);
                         }
-                        else if (fdef && fdef->type == NODE_STRUCT)
+                        else if (!is_ptr && fdef && fdef->type == NODE_STRUCT)
                         {
-                            // Struct field: use _eq function, pass addresses
-                            // self.field is L-value, other.field is L-value (auto-deref from
-                            // pointer) We need addresses of them: &self.field, &other.field
+                            // Struct field: use __eq function
                             sprintf(cmp, "%s__eq(&self.%s, &other.%s)", ft, fn, fn);
                         }
                         else
                         {
-                            // Primitive or unknown: use == (auto-deref)
+                            // Primitive, POINTER, or unknown: use ==
                             sprintf(cmp, "self.%s == other.%s", fn, fn);
                         }
                         strcat(body, cmp);

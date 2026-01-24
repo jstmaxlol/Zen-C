@@ -5076,6 +5076,32 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
             char *struct_name =
                 resolve_struct_name_from_type(ctx, lt, &is_lhs_ptr, &allocated_name);
 
+            // If we are comparing pointers with == or !=, do NOT rewrite to .eq()
+            // We want pointer equality, not value equality (which requires dereferencing)
+            // But strict check: Only if BOTH are pointers. If one is value, we might need rewrite.
+            if (is_lhs_ptr && struct_name &&
+                (strcmp(bin->binary.op, "==") == 0 || strcmp(bin->binary.op, "!=") == 0))
+            {
+                int is_rhs_ptr = 0;
+                char *r_alloc = NULL;
+                char *r_name =
+                    resolve_struct_name_from_type(ctx, rhs->type_info, &is_rhs_ptr, &r_alloc);
+                if (r_alloc)
+                {
+                    free(r_alloc);
+                }
+
+                if (is_rhs_ptr)
+                {
+                    // Both are pointers: Skip rewrite to allow pointer comparison
+                    if (allocated_name)
+                    {
+                        free(allocated_name);
+                    }
+                    struct_name = NULL;
+                }
+            }
+
             if (struct_name)
             {
                 char mangled[256];
@@ -5247,8 +5273,15 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
                     }
                 }
 
+                int lhs_is_num =
+                    is_integer_type(lhs->type_info) || lhs->type_info->kind == TYPE_F32 ||
+                    lhs->type_info->kind == TYPE_F64 || lhs->type_info->kind == TYPE_FLOAT;
+                int rhs_is_num =
+                    is_integer_type(rhs->type_info) || rhs->type_info->kind == TYPE_F32 ||
+                    rhs->type_info->kind == TYPE_F64 || rhs->type_info->kind == TYPE_FLOAT;
+
                 if (!skip_check && !type_eq(lhs->type_info, rhs->type_info) &&
-                    !(is_integer_type(lhs->type_info) && is_integer_type(rhs->type_info)))
+                    !(lhs_is_num && rhs_is_num))
                 {
                     char msg[256];
                     sprintf(msg, "Type mismatch in comparison: cannot compare '%s' and '%s'", t1,
@@ -5333,16 +5366,92 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
 
                     if (!is_ptr_arith && !alias_match)
                     {
-                        char msg[256];
-                        sprintf(msg, "Type mismatch in binary operation '%s'", bin->binary.op);
+                        // Allow assigning 0 to pointer (NULL)
+                        int is_null_assign = 0;
+                        if (strcmp(bin->binary.op, "=") == 0)
+                        {
+                            int lhs_is_ptr = (lhs->type_info->kind == TYPE_POINTER ||
+                                              lhs->type_info->kind == TYPE_STRING ||
+                                              (t1 && strstr(t1, "*") != NULL));
+                            if (lhs_is_ptr && rhs->type == NODE_EXPR_LITERAL &&
+                                rhs->literal.int_val == 0)
+                            {
+                                is_null_assign = 1;
+                            }
+                        }
 
-                        char suggestion[512];
-                        sprintf(suggestion,
-                                "Left operand has type '%s', right operand has type '%s'\n   = "
-                                "note: Consider casting one operand to match the other",
-                                t1, t2);
+                        if (!is_null_assign)
+                        {
+                            // Check for arithmetic promotion (Int * Float, etc)
+                            int lhs_is_num = is_integer_type(lhs->type_info) ||
+                                             lhs->type_info->kind == TYPE_F32 ||
+                                             lhs->type_info->kind == TYPE_F64 ||
+                                             lhs->type_info->kind == TYPE_FLOAT;
+                            int rhs_is_num = is_integer_type(rhs->type_info) ||
+                                             rhs->type_info->kind == TYPE_F32 ||
+                                             rhs->type_info->kind == TYPE_F64 ||
+                                             rhs->type_info->kind == TYPE_FLOAT;
 
-                        zpanic_with_suggestion(op, msg, suggestion);
+                            int valid_arith = 0;
+                            if (lhs_is_num && rhs_is_num)
+                            {
+                                if (strcmp(bin->binary.op, "+") == 0 ||
+                                    strcmp(bin->binary.op, "-") == 0 ||
+                                    strcmp(bin->binary.op, "*") == 0 ||
+                                    strcmp(bin->binary.op, "/") == 0)
+                                {
+                                    valid_arith = 1;
+                                    // Result is the float type if one is float
+                                    if (lhs->type_info->kind == TYPE_F64 ||
+                                        rhs->type_info->kind == TYPE_F64)
+                                    {
+                                        bin->type_info = lhs->type_info->kind == TYPE_F64
+                                                             ? lhs->type_info
+                                                             : rhs->type_info;
+                                    }
+                                    else if (lhs->type_info->kind == TYPE_F32 ||
+                                             rhs->type_info->kind == TYPE_F32 ||
+                                             lhs->type_info->kind == TYPE_FLOAT ||
+                                             rhs->type_info->kind == TYPE_FLOAT)
+                                    {
+                                        // Pick the float type. If both float, pick lhs.
+                                        if (lhs->type_info->kind == TYPE_F32 ||
+                                            lhs->type_info->kind == TYPE_FLOAT)
+                                        {
+                                            bin->type_info = lhs->type_info;
+                                        }
+                                        else
+                                        {
+                                            bin->type_info = rhs->type_info;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        // Both int (but failed equality check previously? - rare
+                                        // but possible if diff int types) If diff int types, we
+                                        // usually allow it in C (promotion). For now, assume LHS
+                                        // dominates or standard promotion.
+                                        bin->type_info = lhs->type_info;
+                                    }
+                                }
+                            }
+
+                            if (!valid_arith)
+                            {
+                                char msg[256];
+                                sprintf(msg, "Type mismatch in binary operation '%s'",
+                                        bin->binary.op);
+
+                                char suggestion[512];
+                                sprintf(
+                                    suggestion,
+                                    "Left operand has type '%s', right operand has type '%s'\n   = "
+                                    "note: Consider casting one operand to match the other",
+                                    t1, t2);
+
+                                zpanic_with_suggestion(op, msg, suggestion);
+                            }
+                        }
                     }
                 }
             }

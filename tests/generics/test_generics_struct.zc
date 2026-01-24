@@ -23,7 +23,7 @@ struct Rc<T> {
 }
 
 impl Rc<T> {
-    fn new(value: T) -> Self {
+    fn new(_value: T) -> Self {
         var inner: RcInner<T>* = 0;
         return Self {
             inner: inner
@@ -32,5 +32,5 @@ impl Rc<T> {
 }
 
 test "test_rc_pointer_instantiation" {
-    var value = Rc<i32>::new(4);
+    var _value = Rc<i32>::new(4);
 }
