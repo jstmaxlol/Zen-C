@@ -22,6 +22,37 @@
 #define ZC_EXTERN_C_END
 #endif
 
+#ifdef __TINYC__
+/* TCC compatibility */
+#ifndef __auto_type
+#define __auto_type __typeof__
+#endif
+
+#ifndef __builtin_expect
+#define __builtin_expect(x, v) (x)
+#endif
+
+#ifndef __builtin_unreachable
+#define __builtin_unreachable()
+#endif
+#endif
+
+/* Centralized string definition for codegen emission */
+#define ZC_TCC_COMPAT_STR                                                                          \
+    "#ifdef __TINYC__\n"                                                                           \
+    "#ifndef __auto_type\n"                                                                        \
+    "#define __auto_type __typeof__\n"                                                             \
+    "#endif\n"                                                                                     \
+    "\n"                                                                                           \
+    "#ifndef __builtin_expect\n"                                                                   \
+    "#define __builtin_expect(x, v) (x)\n"                                                         \
+    "#endif\n"                                                                                     \
+    "\n"                                                                                           \
+    "#ifndef __builtin_unreachable\n"                                                              \
+    "#define __builtin_unreachable()\n"                                                            \
+    "#endif\n"                                                                                     \
+    "#endif\n"
+
 #ifdef __cplusplus
 #include <type_traits>
 

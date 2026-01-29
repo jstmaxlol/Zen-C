@@ -3,6 +3,7 @@
 #include "../parser/parser.h"
 #include "../zprep.h"
 #include "codegen.h"
+#include "compat.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,7 +13,7 @@ static void emit_freestanding_preamble(FILE *out)
     fputs("#include <stddef.h>\n#include <stdint.h>\n#include "
           "<stdbool.h>\n#include <stdarg.h>\n",
           out);
-    fputs("#ifdef __TINYC__\n#define __auto_type __typeof__\n#endif\n", out);
+    fputs(ZC_TCC_COMPAT_STR, out);
     fputs("typedef size_t usize;\ntypedef char* string;\n", out);
     fputs("#define U0 void\n#define I8 int8_t\n#define U8 uint8_t\n#define I16 "
           "int16_t\n#define U16 uint16_t\n",
@@ -86,7 +87,7 @@ void emit_preamble(ParserContext *ctx, FILE *out)
             // C mode
             fputs("#define ZC_AUTO __auto_type\n", out);
             fputs("#define ZC_CAST(T, x) ((T)(x))\n", out);
-            fputs("#ifdef __TINYC__\n#define __auto_type __typeof__\n#endif\n", out);
+            fputs(ZC_TCC_COMPAT_STR, out);
             fputs("static inline const char* _z_bool_str(_Bool b) { return b ? \"true\" : "
                   "\"false\"; }\n",
                   out);
