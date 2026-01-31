@@ -145,7 +145,7 @@ sudo env "PATH=$PATH" make install-ape
 - `out/bin/zc.com`: Il compilatore Zen-C portatile. Inlude la libreria standard, incorporata nell'eseguibile.
 - `out/bin/zc-boot.com`: Un installer bootstrap auto-contenuto per configurare nuovi progetti Zen-C rapidamente.
 
-**Usage:**
+**Utilizzo:**
 ```bash
 # Eseguibile su qualunque OS supportato
 ./out/bin/zc.com build hello.zc -o hello
@@ -180,7 +180,6 @@ export ZC_ROOT=/path/to/Zen-C
 
 Zen C differenzia le costanti al tempo di compilazione e le variabili di esecuzione.
 
-#### Manifest Constants (`def`)
 #### Costanti Manifesto (`def`)
 Valori che esistono solo durante la compilazione (integrate nel codice). Utilizzale per le grandezze degli array, configurazioni fisse, e numeri magici.
 
@@ -327,7 +326,6 @@ alias ID = int;
 alias PuntoDellaMappa = Mappa<string, Punto>;
 ```
 
-#### Opaque Type Aliases
 #### Alias del tipo opachi
 Puoi definire un alias del tipo come `opaque` (lett. _opaco_) per creare un nuovo tipo che si distingue dal suo tipo sottostante al di fuori del modulo che l'ha definito. Questo permette una forte incapsulamento e sicurezza dei tipi senza overhead extra durante l'esecuzione di un wrapper struct.
 
@@ -399,7 +397,6 @@ fn main() {
 }
 ```
 
-#### Lambdas (Closures)
 #### Lambda (Closure)
 Funzioni anonime che possono catturare il loro ambiente.
 ```zc
@@ -938,7 +935,7 @@ Decora le funzioni e gli struct per modificare il comportamento del compilatore.
 | `@pure` | Fn | La funzione non ha effetti collaterali (indizio per l'ottimizzazione). |
 | `@cold` | Fn | La funzione è usata poco spesso (indizio per la branch prediction). |
 | `@hot` | Fn | La funzione è usata molto spesso (indizio per l'ottimizzazione). |
-| `@export` | Fn/Struct | Export symbol (visibility default). |
+| `@export` | Fn/Struct | Esporta simbolo (visibilità default). |
 | `@global` | Fn | CUDA: Entry point del Kernel (`__global__`). |
 | `@device` | Fn | CUDA: Funzione del Device (`__device__`). |
 | `@host` | Fn | CUDA: Funzione dell'Host (`__host__`). |
@@ -1114,7 +1111,7 @@ Zen C include una libreria standard (`std`) che ricopre funzionalità essenziali
 | **`std/path.zc`** | Manipolazione dei percorsi Cross-platform. | [Docs](docs/std/path.md) |
 | **`std/env.zc`** | Variabili d'ambiente del processo. | [Docs](docs/std/env.md) |
 | **`std/net.zc`** | Networking TCP (Socket). | [Docs](docs/std/net.md) |
-| **`std/thread.zc`** | Threads and Synchronization. | [Docs](docs/std/thread.md) |
+| **`std/thread.zc`** | Thread e Sincronizzazione. | [Docs](docs/std/thread.md) |
 | **`std/time.zc`** | Misuramenti di tempo e `sleep`. | [Docs](docs/std/time.md) |
 | **`std/json.zc`** | Parsing JSON e serializzazione. | [Docs](docs/std/json.md) |
 | **`std/stack.zc`** | Stack LIFO `Stack<T>`. | [Docs](docs/std/stack.md) |
