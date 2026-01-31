@@ -24,11 +24,11 @@
 
 ## Panoramica
 
-**Zen C** è un linguaggio di programmazione di sistemi moderno che genera codice `GNU C`/`C11`. Fornisce allo sviluppatore un ricco set di funzionalità, tra cui inferenza di tipo, pattern matcing, generici, tratti, async/await, e gestione manuale della memoria con funzionalità RAII, mantenendo al contempo una compatibilità al 100% con l'ABI C
+**Zen C** è un linguaggio di programmazione di sistemi moderno che genera codice `GNU C`/`C11`. Fornisce allo sviluppatore un ricco set di funzionalità, tra cui inferenza di tipo, pattern matching, generici, tratti, async/await, e gestione manuale della memoria con funzionalità RAII, mantenendo al contempo una compatibilità al 100% con l'ABI C
 
 ## Community
 
-Unisciti alla conversazione, condividi delle demo, fai comande o segnala dei bug nel server ufficiale Discord Zen C
+Unisciti alla conversazione, condividi delle demo, fai domande o segnala dei bug nel server ufficiale Discord Zen C
 
 - Discord: [Unisciti qui](https://discord.com/invite/q6wEsCmkJP)
 
@@ -66,7 +66,7 @@ Unisciti alla conversazione, condividi delle demo, fai comande o segnala dei bug
         - [Pattern Matching](#pattern-matching)
         - [Loop](#loop)
         - [Controllo Avanzato](#controllo-avanzato)
-    - [6. Operators](#6-operatori)
+    - [6. Operatori](#6-operatori)
         - [Operatori Overload-abili](#operatori-overload-abili)
         - [Zucchero Sintattico](#zucchero-sintattico)
     - [7. Stampaggio e Interpolazione delle Stringhe](#7-stampaggio-e-interpolazione-delle-stringhe)
@@ -178,7 +178,7 @@ export ZC_ROOT=/path/to/Zen-C
 
 ### 1. Variabili e Costanti
 
-Zen C differenzia le costanti al tempo di compilazione e le varaibili di esecuzione.
+Zen C differenzia le costanti al tempo di compilazione e le variabili di esecuzione.
 
 #### Manifest Constants (`def`)
 #### Costanti Manifesto (`def`)
@@ -252,7 +252,7 @@ let differenza = risultato.1;  // 1
 
 **Separazione**
 
-Le tuple possono essere separate irettamente in variabili singole.
+Le tuple possono essere separate direttamente in variabili singole.
 ```zc
 let (somma, differenza) = somma_e_differenza(3, 2);
 // somma = 5, differenza = 1
@@ -276,7 +276,7 @@ struct Flags {
 }
 ```
 
-> **Nota**: Gli struct usano le [Semantiche di Spostatmento](#semantiche-di-movimento--copia-sicura) di default. I campi di uno struct possono essere acceduti via `.` anche sui puntatori (Dereferenza-Automatica).
+> **Nota**: Gli struct usano le [Semantiche di Spostamento](#semantiche-di-movimento--copia-sicura) di default. I campi di uno struct possono essere acceduti via `.` anche sui puntatori (Dereferenza-Automatica).
 
 #### Struct Opachi
 Puoi definire uno struct come `opaque` (lett. _opaco_) per restringere l'accesso ai suoi campi al modulo che lo ha definito, permettendo comunque l'allocazione sullo stack dello struct (la grandezza è data).
@@ -349,7 +349,7 @@ fn main() {
 }
 ```
 
-### 4. Functions & Lambdas
+### 4. Funzioni e Lambda
 
 #### Funzioni
 ```zc
@@ -381,7 +381,6 @@ fn incrementa(val: int, quantità: int = 1) -> int {
     return val + quantità;
 }
 
-// Expression default value (evaluated at call site)
 // Espressione come valore default (calcolato)
 fn offset(val: int, pad: int = 10 * 2) -> int {
     return val + pad;
@@ -658,7 +657,7 @@ fn peek(r: Risorsa*) { ... }    // 'r' viene preso in prestito (referenza)
 ```
 
 **Clonazione Esplicita**:
-Se *vuoi* avere più copie di una risorsas, rendilo esplicito:
+Se *vuoi* avere più copie di una risorsa, rendilo esplicito:
 
 ```zc
 let b = a.clona(); // Chiama il metodo `clona` dal tratto `Clone`
@@ -861,7 +860,7 @@ struct Paio<K, V> {
 }
 ```
 
-### 11. Concorreza Asincrona (Async/Await)
+### 11. Concorrenza Asincrona (Async/Await)
 
 Costruito sui pthreads.
 
@@ -918,7 +917,7 @@ Passa delle macro del preprocessore C.
 #define BUFFER_MASSIMO 1024
 ```
 
-### 13. Attributti
+### 13. Attributi
 
 Decora le funzioni e gli struct per modificare il comportamento del compilatore.
 
@@ -1016,24 +1015,24 @@ fn somma(a: int, b: int) -> int {
 | **Clobber** | `: clobber("rax")` | `"rax"` |
 | **Memory** | `: clobber("memoria")` | `"memoria"` |
 
-> **Nota:** Quando si usa la sintassi Intel (via `-masm=intel`), dovrai assicurartic che la tua build sia configurata correttamente (per esempio, `//> cflags: -masm=intel`). TCC non supporta la sintassi assembly Intel.
+> **Nota:** Quando si usa la sintassi Intel (via `-masm=intel`), dovrai assicurarti che la tua build sia configurata correttamente (per esempio, `//> cflags: -masm=intel`). TCC non supporta la sintassi assembly Intel.
 
 
 ### 15. Direttive della Build
 
-Zen C supporta dei commenti speciali all'inizio del tuo file sorgente che ti permettono di configurare il process di build senza necessitare di un sistema di build complesso o di un *Makefile*.
+Zen C supporta dei commenti speciali all'inizio del tuo file sorgente che ti permettono di configurare il processo di build senza necessitare di un sistema di build complesso o di un *Makefile*.
 
 | Direttiva | Argomenti | Descrizione |
 |:---|:---|:---|
 | `//> link:` | `-lfoo` oppure `path/to/lib.a` | Linka con una libreria o un file object. |
 | `//> lib:` | `path/to/libs` | Aggiunge una directory dove cercare le librerie (`-L`). |
-| `//> include:` | `path/to/headers` | Aggiunge una directory dove ricercare i file include (`-I`). |
+| `//> include:` | `path/to/headers` | Aggiunge una directory dove cercare i file include (`-I`). |
 | `//> framework:` | `Cocoa` | Linka con un framework macOS. |
 | `//> cflags:` | `-Wall -O3` | Passa flag arbitrare al compilatore C. |
 | `//> define:` | `MACRO` or `KEY=VAL` | Definisci una macro del preprocessore (`-D`). |
 | `//> pkg-config:` | `gtk+-3.0` | Esegui `pkg-config` e aggiungi `--cflags` e `--libs`. |
 | `//> shell:` | `command` | Esegui un comando sulla shell durante il processo di build. |
-| `//> get:` | `http://url/file` | Scarica un file se un file spefico non esiste. |
+| `//> get:` | `http://url/file` | Scarica un file se un file specifico non esiste. |
 
 #### Feature
 
@@ -1342,7 +1341,6 @@ defer cuda_free(d_ptr);
 // Sincronizzazione
 cuda_sync();
 
-// Thread Indexing (use inside kernels)
 // Indicizzazione dei thread (usa all'interno del kernel)
 let i = thread_id(); // Indice globale
 let bid = block_id();
