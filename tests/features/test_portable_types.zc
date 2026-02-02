@@ -1,0 +1,46 @@
+
+import "std/io.zc";
+
+// This test verifies the new portable integer types and C interop types.
+
+extern fn abs(x: c_int) -> c_int;
+extern fn labs(x: c_long) -> c_long;
+
+fn main() -> int {
+    // Portable types
+    let a: i32 = -42;
+    let b: u32 = 42;
+    let c: i64 = -1000000;
+    let d: u64 = 1000000;
+    
+    if (a != -42) return 1;
+    if (b != 42) return 2;
+    if (c != -1000000) return 3;
+    if (d != 1000000) return 4;
+
+    // C Types
+    let ca: c_int = -10;
+    let cb: c_long = -20;
+    let cc: c_short = -5;
+    let cd: c_char = 65; // 'A'
+    
+    // Test C interaction
+    let abs_val = abs(ca);
+    let expected_abs: c_int = 10;
+    if (abs_val != expected_abs) return 5;
+    
+    let labs_val = labs(cb);
+    let expected_labs: c_long = 20;
+    if (labs_val != expected_labs) return 6;
+
+    // Size checks (these are platform dependent but we can check relations)
+    // sizeof(c_char) is always 1
+    if (sizeof(c_char) != 1) return 7;
+    
+    // sizeof(c_short) <= sizeof(c_int) <= sizeof(c_long)
+    if (sizeof(c_short) > sizeof(c_int)) return 8;
+    if (sizeof(c_int) > sizeof(c_long)) return 9;
+
+    printf("Portable types test passed.\n");
+    return 0;
+}

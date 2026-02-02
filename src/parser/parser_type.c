@@ -427,13 +427,13 @@ Type *parse_type_base(ParserContext *ctx, Lexer *l)
         if (strcmp(name, "uint") == 0)
         {
             free(name);
-            return type_new(TYPE_UINT);
+            return type_new(TYPE_U32); // Strict uint32_t
         }
 
         if (strcmp(name, "int") == 0)
         {
             free(name);
-            return type_new(TYPE_INT);
+            return type_new(TYPE_I32); // Strict int32_t
         }
         if (strcmp(name, "float") == 0)
         {
@@ -467,23 +467,31 @@ Type *parse_type_base(ParserContext *ctx, Lexer *l)
         }
         if (strcmp(name, "long") == 0)
         {
+            zwarn_at(t, "'long' is treated as portable 'int64_t' in Zen C. Use 'c_long' for "
+                        "platform-dependent C long.");
             free(name);
             return type_new(TYPE_I64);
         }
         if (strcmp(name, "short") == 0)
         {
+            zwarn_at(t, "'short' is treated as portable 'int16_t' in Zen C. Use 'c_short' for "
+                        "platform-dependent C short.");
             free(name);
             return type_new(TYPE_I16);
         }
         if (strcmp(name, "unsigned") == 0)
         {
+            zwarn_at(t, "'unsigned' is treated as portable 'uint32_t' in Zen C. Use 'c_uint' for "
+                        "platform-dependent C unsigned int.");
             free(name);
-            return type_new(TYPE_UINT);
+            return type_new(TYPE_U32);
         }
         if (strcmp(name, "signed") == 0)
         {
+            zwarn_at(t, "'signed' is treated as portable 'int32_t' in Zen C. Use 'c_int' for "
+                        "platform-dependent C int.");
             free(name);
-            return type_new(TYPE_INT);
+            return type_new(TYPE_I32);
         }
         if (strcmp(name, "int8_t") == 0)
         {
@@ -534,6 +542,48 @@ Type *parse_type_base(ParserContext *ctx, Lexer *l)
         {
             free(name);
             return type_new(TYPE_ISIZE);
+        }
+
+        // Portable C Types
+        if (strcmp(name, "c_int") == 0)
+        {
+            free(name);
+            return type_new(TYPE_C_INT);
+        }
+        if (strcmp(name, "c_uint") == 0)
+        {
+            free(name);
+            return type_new(TYPE_C_UINT);
+        }
+        if (strcmp(name, "c_long") == 0)
+        {
+            free(name);
+            return type_new(TYPE_C_LONG);
+        }
+        if (strcmp(name, "c_ulong") == 0)
+        {
+            free(name);
+            return type_new(TYPE_C_ULONG);
+        }
+        if (strcmp(name, "c_short") == 0)
+        {
+            free(name);
+            return type_new(TYPE_C_SHORT);
+        }
+        if (strcmp(name, "c_ushort") == 0)
+        {
+            free(name);
+            return type_new(TYPE_C_USHORT);
+        }
+        if (strcmp(name, "c_char") == 0)
+        {
+            free(name);
+            return type_new(TYPE_C_CHAR);
+        }
+        if (strcmp(name, "c_uchar") == 0)
+        {
+            free(name);
+            return type_new(TYPE_C_UCHAR);
         }
 
         // Relaxed Type Check: If explicit 'struct Name', trust the user.
@@ -677,7 +727,7 @@ Type *parse_type_base(ParserContext *ctx, Lexer *l)
                     zpanic_at(t, "Expected > after generic");
                 }
 
-                char *unmangled_arg = type_to_c_string(first_arg);
+                char *unmangled_arg = type_to_string(first_arg);
 
                 int is_single_dep = 0;
                 for (int k = 0; k < ctx->known_generics_count; ++k)
@@ -791,7 +841,7 @@ Type *parse_type_base(ParserContext *ctx, Lexer *l)
             if (lexer_peek(l).type == TOK_COMMA)
             {
                 lexer_next(l);
-                strcat(sig, "_");
+                strcat(sig, "__");
             }
             else
             {

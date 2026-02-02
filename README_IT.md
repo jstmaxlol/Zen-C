@@ -101,6 +101,7 @@ Unisciti alla conversazione, condividi delle demo, fai domande o segnala dei bug
         - [Vincoli Nominati](#vincoli-nominati)
     - [15. Direttive della Buil](#15-direttive-della-build)
     - [16. Keyword](#16-keyword)
+    - [17. Interoperabilità C](#17-interoperabilità-c)
 - [Libreria Standard](#liberia-standard)
 - [Tooling](#tooling)
     - [Language Server (LSP)](#language-server-lsp)
@@ -205,7 +206,11 @@ let y: const int = 10;  // Sola lettura (Tipo qualificato)
 
 | Tipo | C Equivalent | Descrizione |
 |:---|:---|:---|
-| `int`, `uint` | `int`, `unsigned int` | Intero standard della piattaforma |
+| `int`, `uint` | `int32_t`, `uint32_t` | Intero a 32 bit con segno/senza segno |
+| `c_char`, `c_uchar` | `char`, `unsigned char` | C char (Interop) |
+| `c_short`, `c_ushort` | `short`, `unsigned short` | C short (Interop) |
+| `c_int`, `c_uint` | `int`, `unsigned int` | C int (Interop) |
+| `c_long`, `c_ulong` | `long`, `unsigned long` | C long (Interop) |
 | `I8` .. `I128` or `i8` .. `i128` | `int8_t` .. `__int128_t` | Interi a grandezza fissa con segno |
 | `U8` .. `U128` or `u8` .. `u128` | `uint8_t` .. `__uint128_t` | Interi a grandezza fissa senza segno |
 | `isize`, `usize` | `ptrdiff_t`, `size_t` | Interi con grandezza di un puntatore |
@@ -217,6 +222,12 @@ let y: const int = 10;  // Sola lettura (Tipo qualificato)
 | `U0`, `u0`, `void` | `void` | Tipo vuoto |
 | `iN` (Per esempio, `i256`) | `_BitInt(N)` | Intero con segno a larghezza arbitraria di bit (C23) |
 | `uN` (Per esempio, `u42`) | `unsigned _BitInt(N)` | Intero senza segno a larghezza arbitraria di bit (C23) |
+
+> **Best Practice per Codice Portabile**
+>
+> - Usa **Tipi Portabili** (`int`, `uint`, `i64`, `u8`, ecc.) per tutta la logica Zen C pura. `int` è garantito essere a 32-bit con segno su tutte le architetture.
+> - Usa **Tipi di Interop C** (`c_int`, `c_char`, `c_long`) **solo** quando interagisci con librerie C (FFI). La loro dimensione varia in base alla piattaforma e al compilatore C.
+> - Usa `isize` e `usize` per indicizzazione di array e aritmetica dei puntatori.
 
 ### 3. Tipi Aggregati
 
@@ -1088,6 +1099,48 @@ Gli identifiers seguenti sono riservati poiché sono keyword nello standard C11:
 
 #### Operatori
 `and`, `or`
+
+### 17. Interoperabilità C
+Zen C offre due modi per interagire con il codice C: **Import Trusted** (Conveniente) e **FFI Esplicita** (Sicuro/Preciso).
+
+#### Metodo 1: Import Trusted (Conveniente)
+Puoi importare un header C direttamente usando la parola chiave `import` con l'estensione `.h`. Questo tratta l'header come un modulo e assume che tutti i simboli acceduti esistano.
+
+```zc
+//> link: -lm
+import "math.h" as c_math;
+
+fn main() {
+    // Il compilatore si fida della correttezza; emette 'cos(...)' direttamente
+    let x = c_math::cos(3.14159);
+}
+```
+
+> **Pro**: Zero boilerplate. Accesso immediato a tutto nell'header.
+> **Contro**: Nessuna sicurezza dei tipi da Zen C (errori catturati dal compilatore C dopo).
+
+#### Metodo 2: FFI Esplicita (Sicuro)
+Per un controllo rigoroso dei tipi o quando non vuoi includere il testo di un header, usa `extern fn`.
+
+```zc
+include <stdio.h> // Emette #include <stdio.h> nel C generato
+
+// Definisci firma rigorosa
+extern fn printf(fmt: char*, ...) -> c_int;
+
+fn main() {
+    printf("Ciao FFI: %d\n", 42); // Controllato nei tipi da Zen C
+}
+```
+
+> **Pro**: Zen C assicura che i tipi corrispondano.
+> **Contro**: Richiede dichiarazione manuale delle funzioni.
+
+#### `import` vs `include`
+
+- **`import "file.h"`**: Registra l'header come un modulo con nome. Abilita l'accesso implicito ai simboli (es. `file::function()`).
+- **`include <file.h>`**: Emette puramente `#include <file.h>` nel codice C generato. Non introduce alcun simbolo nel compilatore Zen C; devi usare `extern fn` per accedervi.
+
 
 ---
 

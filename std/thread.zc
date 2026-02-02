@@ -39,11 +39,11 @@ raw {
         if (ret == 0) {
             *out_handle = (size_t)pt;
         }
-        return ret;
+        return (int)ret;
     }
     
     static int _z_thread_join(void *handle) {
-        return pthread_join((pthread_t)handle, NULL);
+        return (int)pthread_join((pthread_t)handle, NULL);
     }
 
     static int _z_thread_detach(void* handle) {
@@ -75,16 +75,16 @@ raw {
     }
 }
 
-extern fn _z_thread_equal(handle1: void*, handle2: void*) -> int;
-extern fn _z_thread_spawn(ctx: void*, out: usize*) -> int;
-extern fn _z_thread_join(handle: void*) -> int;
-extern fn _z_thread_detach(handle: void*) -> int;
-extern fn _z_thread_cancel(handle: void*) -> int;
+extern fn _z_thread_equal(handle1: void*, handle2: void*) -> c_int;
+extern fn _z_thread_spawn(ctx: void*, out: usize*) -> c_int;
+extern fn _z_thread_join(handle: void*) -> c_int;
+extern fn _z_thread_detach(handle: void*) -> c_int;
+extern fn _z_thread_cancel(handle: void*) -> c_int;
 extern fn _z_mutex_init(ptr: void*);
 extern fn _z_mutex_lock(ptr: void*);
 extern fn _z_mutex_unlock(ptr: void*);
 extern fn _z_mutex_destroy(ptr: void*);
-extern fn _z_usleep(micros: int);
+extern fn _z_usleep(micros: c_int);
 
 
 
@@ -101,14 +101,12 @@ impl Thread {
     }
 
     fn spawn(func: fn()) -> Result<Thread> {
-        let t: usize = 0; 
+        let out_handle: usize = 0; 
         
-        let ctx_copy = malloc(16); // z_closure_T is 16 bytes
-        if ctx_copy == NULL {
-            return Result<Thread>::Err("OOM");
-        }
+        let ctx = malloc(16); // z_closure_T is 16 bytes
+        if (ctx == NULL) return Result<Thread>::Err("OOM");
         
-        memcpy(ctx_copy, &func, 16);
+        memcpy(ctx, &func, 16);
 
         let ret = _z_thread_spawn(ctx_copy, &t);
         
@@ -117,7 +115,7 @@ impl Thread {
             return Result<Thread>::Err("Failed to create thread");
         }
         
-        return Result<Thread>::Ok(Thread { handle: (void*)t });
+        return Result<Thread>::Ok(Thread { handle: (void*)out_handle });
     }
     
     fn join(self) -> Result<bool> {
@@ -180,5 +178,6 @@ impl Drop for Mutex {
 }
 
 fn sleep_ms(ms: int) {
-    _z_usleep(ms * 1000);
+    let micros: c_int = (c_int)(ms * 1000);
+    _z_usleep(micros);
 }

@@ -691,16 +691,22 @@ void register_tuple(ParserContext *ctx, const char *sig)
     s_def->strct.name = xstrdup(struct_name);
 
     char *s_sig = xstrdup(sig);
-    char *tok = strtok(s_sig, "_");
+    char *current = s_sig;
+    char *next_sep = strstr(current, "__");
     ASTNode *head = NULL, *tail = NULL;
     int i = 0;
-    while (tok)
+    while (current)
     {
+        if (next_sep)
+        {
+            *next_sep = 0;
+        }
+
         ASTNode *f = ast_create(NODE_FIELD);
         char fname[32];
         sprintf(fname, "v%d", i++);
         f->field.name = xstrdup(fname);
-        f->field.type = xstrdup(tok);
+        f->field.type = xstrdup(current);
 
         if (!head)
         {
@@ -712,7 +718,15 @@ void register_tuple(ParserContext *ctx, const char *sig)
         }
         tail = f;
 
-        tok = strtok(NULL, "_");
+        if (next_sep)
+        {
+            current = next_sep + 2;
+            next_sep = strstr(current, "__");
+        }
+        else
+        {
+            break;
+        }
     }
     free(s_sig);
     s_def->strct.fields = head;

@@ -9,7 +9,7 @@ include <stdio.h>
 include <stdlib.h>
 
 // system() can be externed directly with const char*
-extern fn system(command: const char*) -> int;
+extern fn system(command: const char*) -> c_int;
 
 // Minimal raw block: only for opaque FILE* types
 // popen/pclose/fgets use FILE* which conflicts with void*
@@ -28,8 +28,8 @@ raw {
 }
 
 extern fn _z_popen(command: const char*, type: const char*) -> void*;
-extern fn _z_pclose(stream: void*) -> int;
-extern fn _z_fgets(s: char*, size: int, stream: void*) -> char*;
+extern fn _z_pclose(stream: void*) -> c_int;
+extern fn _z_fgets(s: char*, size: c_int, stream: void*) -> char*;
 
 struct Output {
     stdout: String;
@@ -88,7 +88,7 @@ impl Command {
         let buf = (char*)malloc(buf_size);
         
         while (true) {
-            let res = _z_fgets(buf, (int)buf_size, fp);
+            let res = _z_fgets(buf, (c_int)buf_size, fp);
             if (res == 0) break;
             
             let chunk = String::from(buf);

@@ -1130,12 +1130,23 @@ void print_type_defs(ParserContext *ctx, FILE *out, ASTNode *nodes)
         fprintf(out, "typedef struct Tuple_%s Tuple_%s;\nstruct Tuple_%s { ", t->sig, t->sig,
                 t->sig);
         char *s = xstrdup(t->sig);
-        char *p = strtok(s, "_");
+        char *current = s;
+        char *next_sep = strstr(current, "__");
         int i = 0;
-        while (p)
+        while (current)
         {
-            fprintf(out, "%s v%d; ", p, i++);
-            p = strtok(NULL, "_");
+            if (next_sep)
+            {
+                *next_sep = 0;
+                fprintf(out, "%s v%d; ", current, i++);
+                current = next_sep + 2;
+                next_sep = strstr(current, "__");
+            }
+            else
+            {
+                fprintf(out, "%s v%d; ", current, i++);
+                break;
+            }
         }
         free(s);
         fprintf(out, "};\n");

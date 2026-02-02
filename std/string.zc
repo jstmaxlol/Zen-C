@@ -90,7 +90,8 @@ impl String {
     }
 
     fn eq(self, other: String*) -> bool {
-        return strcmp(self.c_str(), (*other).c_str()) == 0;
+        let zero: c_int = 0;
+        return strcmp(self.c_str(), (*other).c_str()) == zero;
     }
 
     fn length(self) -> usize {
@@ -146,7 +147,8 @@ impl String {
     fn starts_with(self, prefix: char*) -> bool {
         let plen = strlen(prefix);
         if plen > self.length() { return false; }
-        return strncmp(self.c_str(), prefix, plen) == 0;
+        let zero: c_int = 0;
+        return strncmp(self.c_str(), prefix, plen) == zero;
     }
     
     fn ends_with(self, suffix: char*) -> bool {
@@ -154,7 +156,8 @@ impl String {
         let len = self.length();
         if slen > len { return false; }
         let offset = (int)(len - slen);
-        return strcmp(self.c_str() + offset, suffix) == 0;
+        let zero: c_int = 0;
+        return strcmp(self.c_str() + offset, suffix) == zero;
     }
     
     fn free(self) {

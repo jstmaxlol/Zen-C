@@ -1150,14 +1150,102 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
         break;
     }
     case NODE_EXPR_CAST:
-        fprintf(out, "((%s)(", node->cast.target_type);
+    {
+        const char *t = node->cast.target_type;
+        const char *mapped = t;
+        if (strcmp(t, "c_int") == 0)
+        {
+            mapped = "int";
+        }
+        else if (strcmp(t, "c_uint") == 0)
+        {
+            mapped = "unsigned int";
+        }
+        else if (strcmp(t, "c_long") == 0)
+        {
+            mapped = "long";
+        }
+        else if (strcmp(t, "c_ulong") == 0)
+        {
+            mapped = "unsigned long";
+        }
+        else if (strcmp(t, "c_short") == 0)
+        {
+            mapped = "short";
+        }
+        else if (strcmp(t, "c_ushort") == 0)
+        {
+            mapped = "unsigned short";
+        }
+        else if (strcmp(t, "c_char") == 0)
+        {
+            mapped = "char";
+        }
+        else if (strcmp(t, "c_uchar") == 0)
+        {
+            mapped = "unsigned char";
+        }
+        else if (strcmp(t, "int") == 0)
+        {
+            mapped = "int32_t";
+        }
+        else if (strcmp(t, "uint") == 0)
+        {
+            mapped = "unsigned int";
+        }
+
+        fprintf(out, "((%s)(", mapped);
         codegen_expression(ctx, node->cast.expr, out);
         fprintf(out, "))");
         break;
+    }
     case NODE_EXPR_SIZEOF:
         if (node->size_of.target_type)
         {
-            fprintf(out, "sizeof(%s)", node->size_of.target_type);
+            const char *t = node->size_of.target_type;
+            const char *mapped = t;
+            if (strcmp(t, "c_int") == 0)
+            {
+                mapped = "int";
+            }
+            else if (strcmp(t, "c_uint") == 0)
+            {
+                mapped = "unsigned int";
+            }
+            else if (strcmp(t, "c_long") == 0)
+            {
+                mapped = "long";
+            }
+            else if (strcmp(t, "c_ulong") == 0)
+            {
+                mapped = "unsigned long";
+            }
+            else if (strcmp(t, "c_short") == 0)
+            {
+                mapped = "short";
+            }
+            else if (strcmp(t, "c_ushort") == 0)
+            {
+                mapped = "unsigned short";
+            }
+            else if (strcmp(t, "c_char") == 0)
+            {
+                mapped = "char";
+            }
+            else if (strcmp(t, "c_uchar") == 0)
+            {
+                mapped = "unsigned char";
+            }
+            else if (strcmp(t, "int") == 0)
+            {
+                mapped = "int32_t"; // Strict mapping
+            }
+            else if (strcmp(t, "uint") == 0)
+            {
+                mapped = "unsigned int"; // uint alias
+            }
+
+            fprintf(out, "sizeof(%s)", mapped);
         }
         else
         {

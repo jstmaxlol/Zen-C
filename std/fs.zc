@@ -15,9 +15,9 @@ include <stdlib.h>
 include <stdio.h>
 
 // Direct externs for simple functions with const char* parameters
-extern fn access(pathname: const char*, mode: int) -> int;
-extern fn unlink(pathname: const char*) -> int;
-extern fn rmdir(pathname: const char*) -> int;
+extern fn access(pathname: const char*, mode: c_int) -> c_int;
+extern fn unlink(pathname: const char*) -> c_int;
+extern fn rmdir(pathname: const char*) -> c_int;
 extern fn malloc(size: usize) -> void*;
 extern fn free(ptr: void*);
 
@@ -90,17 +90,17 @@ raw {
     }
 }
 
-extern fn _z_fs_mkdir(path: const char*) -> int;
-extern fn _z_fs_get_metadata(path: const char*, size: U64*, is_dir: int*, is_file: int*) -> int;
-extern fn _z_fs_read_entry(dir: void*, out_name: char*, buf_size: int, is_dir: int*) -> int;
+extern fn _z_fs_mkdir(path: const char*) -> c_int;
+extern fn _z_fs_get_metadata(path: const char*, size: U64*, is_dir: c_int*, is_file: c_int*) -> c_int;
+extern fn _z_fs_read_entry(dir: void*, out_name: char*, buf_size: c_int, is_dir: c_int*) -> c_int;
 extern fn _z_fs_fopen(path: const char*, mode: const char*) -> void*;
-extern fn _z_fs_fclose(stream: void*) -> int;
+extern fn _z_fs_fclose(stream: void*) -> c_int;
 extern fn _z_fs_fread(ptr: void*, size: usize, nmemb: usize, stream: void*) -> usize;
 extern fn _z_fs_fwrite(ptr: void*, size: usize, nmemb: usize, stream: void*) -> usize;
-extern fn _z_fs_fseek(stream: void*, offset: I64, whence: int) -> int;
+extern fn _z_fs_fseek(stream: void*, offset: I64, whence: c_int) -> c_int;
 extern fn _z_fs_ftell(stream: void*) -> I64;
 extern fn _z_fs_opendir(name: const char*) -> void*;
-extern fn _z_fs_closedir(dir: void*) -> int;
+extern fn _z_fs_closedir(dir: void*) -> c_int;
 
 
 struct File {
@@ -191,41 +191,50 @@ impl File {
     }
 
     fn exists(path: char*) -> bool {
-        return access(path, Z_F_OK) == 0;
+        let zero: c_int = 0;
+        return access(path, Z_F_OK) == zero;
     }
 
     fn metadata(path: char*) -> Result<Metadata> {
         let size: uint64_t;
-        let is_d: int;
-        let is_f: int;
+        let is_d: c_int;
+        let is_f: c_int;
         
-        if (_z_fs_get_metadata(path, &size, &is_d, &is_f) != 0) {
+        let res = _z_fs_get_metadata(path, &size, &is_d, &is_f);
+        let non_zero: c_int = 0;
+        if (res != non_zero) {
             return Result<Metadata>::Err("Failed to get metadata");
         }
         
         return Result<Metadata>::Ok(Metadata { 
             size: (U64)size, 
-            is_dir: is_d != 0, 
-            is_file: is_f != 0 
+            is_dir: is_d != non_zero, 
+            is_file: is_f != non_zero 
         });
     }
 
     fn create_dir(path: char*) -> Result<bool> {
-        if (_z_fs_mkdir(path) != 0) {
+        let res = _z_fs_mkdir(path);
+        let zero: c_int = 0;
+        if (res != zero) {
             return Result<bool>::Err("Failed to create directory");
         }
         return Result<bool>::Ok(true);
     }
 
     fn remove_file(path: char*) -> Result<bool> {
-        if (unlink(path) != 0) {
+        let res = unlink(path);
+        let zero: c_int = 0;
+        if (res != zero) {
             return Result<bool>::Err("Failed to remove file");
         }
         return Result<bool>::Ok(true);
     }
 
     fn remove_dir(path: char*) -> Result<bool> {
-        if (rmdir(path) != 0) {
+        let res = rmdir(path);
+        let zero: c_int = 0;
+        if (res != zero) {
             return Result<bool>::Err("Failed to remove directory");
         }
         return Result<bool>::Ok(true);
@@ -245,17 +254,19 @@ impl File {
             return Result< Vec<DirEntry> >::Err("Out of memory");
         }
         
-        let is_d: int = 0;
+        let is_d: c_int = 0;
         
+        let is_d_zero: c_int = 0;
         while (_z_fs_read_entry(dir, name_buf, 256, &is_d)) {
-            if (strcmp(name_buf, ".") == 0 || strcmp(name_buf, "..") == 0) {
+            let zero_cmp: c_int = 0;
+            if (strcmp(name_buf, ".") == zero_cmp || strcmp(name_buf, "..") == zero_cmp) {
                 continue;
             }
             
             let s = String::new(name_buf);
             let ent = DirEntry {
                 name: s,
-                is_dir: is_d != 0
+                is_dir: is_d != is_d_zero
             };
             
             // Transfer ownership: String -> DirEntry

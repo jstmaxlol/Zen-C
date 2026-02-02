@@ -6,11 +6,11 @@ include <stdio.h>
 include <stdarg.h>
 
 // These work directly with const char* in extern declarations
-extern fn vprintf(fmt: const char*, ap: va_list) -> int;
+extern fn vprintf(fmt: const char*, ap: va_list) -> c_int;
 
 // vsnprintf is problematic on macOS because it's a macro that expands to a builtin with a different signature
 // so we wrap it in a C function to avoid the conflict
-extern fn _z_vsnprintf(str: char*, size: usize, fmt: const char*, ap: va_list) -> int;
+extern fn _z_vsnprintf(str: char*, size: usize, fmt: const char*, ap: va_list) -> c_int;
 
 // EOF is typically -1, but we define it for portability
 def Z_EOF = -1;
@@ -27,7 +27,7 @@ raw {
 }
 
 extern fn _z_get_stdin() -> void*;
-extern fn _z_fgetc(stream: void*) -> int;
+extern fn _z_fgetc(stream: void*) -> c_int;
 
 fn format(fmt: char*, ...) -> char* {
     static let buffer: char[1024];
@@ -40,7 +40,7 @@ fn format(fmt: char*, ...) -> char* {
     return (char*)buffer;
 }
 
-fn format_into(buffer: char*, size: usize, fmt: char*, ...) -> int {
+fn format_into(buffer: char*, size: usize, fmt: char*, ...) -> c_int {
     let ap: va_list;
     va_start(ap, fmt);
 
@@ -63,7 +63,7 @@ fn format_new(fmt: char*, ...) -> char* {
     return buffer;
 }
 
-fn print(fmt: char*, ...) -> int {
+fn print(fmt: char*, ...) -> c_int {
     let ap: va_list;
     va_start(ap, fmt);
     let ret = vprintf(fmt, ap);
@@ -71,7 +71,7 @@ fn print(fmt: char*, ...) -> int {
     return ret;
 }
 
-fn println(fmt: char*, ...) -> int {
+fn println(fmt: char*, ...) -> c_int {
     let ap: va_list;
     va_start(ap, fmt);
     let ret = vprintf(fmt, ap);
@@ -86,13 +86,15 @@ fn readln() -> char* {
     let line: char* = malloc(cap);
     if (line == NULL) return NULL;
     
-    let c: int;
+    let c: c_int;
     let std_in = _z_get_stdin();
 
     while (true) {
         c = _z_fgetc(std_in);
-        if (c == Z_EOF) break;
-        if (c == 10) break; // '\n'
+        let eof_c: c_int = Z_EOF;
+        if (c == eof_c) break;
+        let nl_c: c_int = 10;
+        if (c == nl_c) break; // '\n'
 
         if (len + 1 >= cap) {
             cap = cap * 2;
@@ -108,7 +110,8 @@ fn readln() -> char* {
         len = len + 1;
     }
     
-    if (len == 0 && c == Z_EOF) {
+    let eof_final: c_int = Z_EOF;
+    if (len == 0 && c == eof_final) {
         free(line);
         return NULL;
     }

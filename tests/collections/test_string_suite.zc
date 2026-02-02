@@ -91,7 +91,9 @@ test "test_fstrings_return" {
     let inner = f"Inner({x})";
     let outer = f"Outer({inner})";
     println "Composed: {outer}";
-    assert(strcmp(outer, "Outer(Inner(100))") == 0, "Composed f-string failed");
+    let outer_res = strcmp(outer, "Outer(Inner(100))");
+    let zero: c_int = 0;
+    assert(outer_res == zero, "Composed f-string failed");
 }
 
 test "test_string_std_ops" {

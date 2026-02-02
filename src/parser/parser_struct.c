@@ -315,6 +315,16 @@ ASTNode *parse_impl(ParserContext *ctx, Lexer *l)
             register_generic(ctx, target_gen_param);
         }
 
+        // Check for common error: swapped Struct and Trait
+        // impl MyStruct for MyTrait (Wrong) vs impl MyTrait for MyStruct (Correct)
+        if (!is_trait(name1) && is_trait(name2))
+        {
+            zpanic_at(t1,
+                      "Incorrect usage of impl. Did you mean 'impl %s for %s'? Syntax is 'impl "
+                      "<Trait> for <Struct>'",
+                      name2, name1);
+        }
+
         // Auto-import std/mem.zc if implementing Drop, Copy, or Clone traits
         if (strcmp(name1, "Drop") == 0 || strcmp(name1, "Copy") == 0 || strcmp(name1, "Clone") == 0)
         {
@@ -863,7 +873,7 @@ ASTNode *parse_struct(ParserContext *ctx, Lexer *l, int is_union, int is_opaque)
                 Token field_name = lexer_next(l);
                 lexer_next(l); // eat :
                 Type *ft = parse_type_formal(ctx, l);
-                char *field_type_str = type_to_string(ft);
+                char *field_type_str = type_to_c_string(ft);
                 expect(l, TOK_SEMICOLON, "Expected ;");
 
                 ASTNode *nf = ast_create(NODE_FIELD);
@@ -947,7 +957,7 @@ ASTNode *parse_struct(ParserContext *ctx, Lexer *l, int is_union, int is_opaque)
             Token f_name = lexer_next(l);
             expect(l, TOK_COLON, "Expected :");
             Type *ft = parse_type_formal(ctx, l);
-            char *f_type = type_to_string(ft);
+            char *f_type = type_to_c_string(ft);
 
             ASTNode *f = ast_create(NODE_FIELD);
             f->field.name = token_strdup(f_name);
@@ -1120,7 +1130,7 @@ ASTNode *parse_enum(ParserContext *ctx, Lexer *l)
                     while (lexer_peek(l).type == TOK_COMMA)
                     {
                         lexer_next(l); // eat ,
-                        strcat(sig, "_");
+                        strcat(sig, "__");
                         Type *next_t = parse_type_obj(ctx, l);
                         char *ns = type_to_string(next_t);
                         if (strlen(sig) + strlen(ns) + 2 > 510)

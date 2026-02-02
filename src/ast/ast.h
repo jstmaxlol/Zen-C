@@ -28,30 +28,40 @@ typedef enum
  */
 typedef enum
 {
-    TYPE_VOID,     ///< `void` type.
-    TYPE_BOOL,     ///< `bool` type.
-    TYPE_CHAR,     ///< `char` type.
-    TYPE_STRING,   ///< `string` type.
-    TYPE_U0,       ///< `u0` type.
-    TYPE_I8,       ///< `i8` type.
-    TYPE_U8,       ///< `u8` type.
-    TYPE_I16,      ///< `i16` type.
-    TYPE_U16,      ///< `u16` type.
-    TYPE_I32,      ///< `i32` type.
-    TYPE_U32,      ///< `u32` type.
-    TYPE_I64,      ///< `i64` type.
-    TYPE_U64,      ///< `u64` type.
-    TYPE_I128,     ///< `i128` type.
-    TYPE_U128,     ///< `u128` type.
-    TYPE_F32,      ///< `f32` type.
-    TYPE_F64,      ///< `f64` type.
-    TYPE_INT,      ///< `int` (alias, usually i32).
-    TYPE_FLOAT,    ///< `float` (alias).
-    TYPE_USIZE,    ///< `usize` (pointer size unsigned).
-    TYPE_ISIZE,    ///< `isize` (pointer size signed).
-    TYPE_BYTE,     ///< `byte`.
-    TYPE_RUNE,     ///< `rune`.
-    TYPE_UINT,     ///< `uint` (alias).
+    TYPE_VOID,   ///< `void` type.
+    TYPE_BOOL,   ///< `bool` type.
+    TYPE_CHAR,   ///< `char` type.
+    TYPE_STRING, ///< `string` type.
+    TYPE_U0,     ///< `u0` type.
+    TYPE_I8,     ///< `i8` type.
+    TYPE_U8,     ///< `u8` type.
+    TYPE_I16,    ///< `i16` type.
+    TYPE_U16,    ///< `u16` type.
+    TYPE_I32,    ///< `i32` type.
+    TYPE_U32,    ///< `u32` type.
+    TYPE_I64,    ///< `i64` type.
+    TYPE_U64,    ///< `u64` type.
+    TYPE_I128,   ///< `i128` type.
+    TYPE_U128,   ///< `u128` type.
+    TYPE_F32,    ///< `f32` type.
+    TYPE_F64,    ///< `f64` type.
+    TYPE_INT,    ///< `int` (alias, usually i32).
+    TYPE_FLOAT,  ///< `float` (alias).
+    TYPE_USIZE,  ///< `usize` (pointer size unsigned).
+    TYPE_ISIZE,  ///< `isize` (pointer size signed).
+    TYPE_BYTE,   ///< `byte`.
+    TYPE_RUNE,   ///< `rune`.
+    TYPE_UINT,   ///< `uint` (alias).
+    // Portable C Types (FFI)
+    TYPE_C_INT,    ///< `c_int` (int).
+    TYPE_C_UINT,   ///< `c_uint` (unsigned int).
+    TYPE_C_LONG,   ///< `c_long` (long).
+    TYPE_C_ULONG,  ///< `c_ulong` (unsigned long).
+    TYPE_C_SHORT,  ///< `c_short` (short).
+    TYPE_C_USHORT, ///< `c_ushort` (unsigned short).
+    TYPE_C_CHAR,   ///< `c_char` (char).
+    TYPE_C_UCHAR,  ///< `c_uchar` (unsigned char).
+
     TYPE_STRUCT,   ///< Struct type.
     TYPE_ENUM,     ///< Enum type.
     TYPE_POINTER,  ///< Pointer type (*).

@@ -259,6 +259,25 @@ static char *type_to_string_impl(Type *t)
         return xstrdup("int32_t");
     case TYPE_UINT:
         return xstrdup("unsigned int");
+
+    // Portable C Types
+    case TYPE_C_INT:
+        return xstrdup("c_int");
+    case TYPE_C_UINT:
+        return xstrdup("c_uint");
+    case TYPE_C_LONG:
+        return xstrdup("c_long");
+    case TYPE_C_ULONG:
+        return xstrdup("c_ulong");
+    case TYPE_C_SHORT:
+        return xstrdup("c_short");
+    case TYPE_C_USHORT:
+        return xstrdup("c_ushort");
+    case TYPE_C_CHAR:
+        return xstrdup("c_char");
+    case TYPE_C_UCHAR:
+        return xstrdup("c_uchar");
+
     case TYPE_INT:
         return xstrdup("int");
     case TYPE_FLOAT:
@@ -461,8 +480,29 @@ static char *type_to_c_string_impl(Type *t)
         return xstrdup("int32_t");
     case TYPE_UINT:
         return xstrdup("unsigned int");
-    case TYPE_INT:
+
+    // Portable C Types (Map directly to C types)
+    case TYPE_C_INT:
         return xstrdup("int");
+    case TYPE_C_UINT:
+        return xstrdup("unsigned int");
+    case TYPE_C_LONG:
+        return xstrdup("long");
+    case TYPE_C_ULONG:
+        return xstrdup("unsigned long");
+    case TYPE_C_SHORT:
+        return xstrdup("short");
+    case TYPE_C_USHORT:
+        return xstrdup("unsigned short");
+    case TYPE_C_CHAR:
+        return xstrdup("char");
+    case TYPE_C_UCHAR:
+        return xstrdup("unsigned char");
+
+    case TYPE_INT:
+        // 'int' in Zen C maps to 'i32' now for portability.
+        // FFI should use c_int.
+        return xstrdup("int32_t");
     case TYPE_FLOAT:
         return xstrdup("float");
     case TYPE_BITINT:
@@ -519,8 +559,11 @@ static char *type_to_c_string_impl(Type *t)
             return res;
         }
 
-        char *res = xmalloc(strlen(inner) + 7);
-        sprintf(res, "Slice_%s", inner);
+        char *inner_zens = type_to_string(t->inner);
+        char *res = xmalloc(strlen(inner_zens) + 7);
+        sprintf(res, "Slice_%s", inner_zens);
+        free(inner_zens);
+        free(inner);
         return res;
     }
 
@@ -561,7 +604,12 @@ static char *type_to_c_string_impl(Type *t)
         return xstrdup("z_closure_T");
 
     case TYPE_GENERIC:
-        return xstrdup(t->name);
+        // Use type_to_string to get the mangled name (e.g. Option_int) instead of raw C string
+        // composition This ensures consistency with struct definitions.
+        {
+            char *s = type_to_string(t);
+            return s;
+        }
 
     case TYPE_ALIAS:
         return type_to_c_string(t->inner);
