@@ -9,7 +9,7 @@
 
 # Zen C
 
-**Ergonomía Moderna. Cero Sobrecarga. C Puro.**
+**Ergonomía Moderna. Cero Overhead. C Puro.**
 
 [![Estado de la Construcción](https://img.shields.io/badge/build-passing-brightgreen)]()
 [![Licencia](https://img.shields.io/badge/license-MIT-blue)]()
