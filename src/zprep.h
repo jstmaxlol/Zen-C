@@ -269,4 +269,18 @@ double z_get_time(void);
  */
 void z_setup_terminal(void);
 
+/**
+ * @brief Get temporary directory path.
+ * Windows: %TEMP% or C:\Windows\Temp
+ * POSIX: /tmp
+ * @return Path string (do not free).
+ */
+const char *z_get_temp_dir(void);
+
+/**
+ * @brief Get current process ID.
+ * @return PID.
+ */
+int z_get_pid(void);
+
 #endif

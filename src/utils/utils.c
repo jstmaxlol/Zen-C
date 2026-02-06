@@ -542,3 +542,34 @@ int levenshtein(const char *s1, const char *s2)
 
     return matrix[len1][len2];
 }
+
+const char *z_get_temp_dir(void)
+{
+#ifdef _WIN32
+    static char tmp[MAX_PATH_SIZE] = {0};
+    if (tmp[0]) return tmp;
+
+    if (GetTempPathA(sizeof(tmp), tmp))
+    {
+        // Remove trailing backslash if present
+        int len = strlen(tmp);
+        if (len > 0 && tmp[len - 1] == '\\')
+        {
+            tmp[len - 1] = 0;
+        }
+        return tmp;
+    }
+    return "C:\\Windows\\Temp";
+#else
+    return "/tmp";
+#endif
+}
+
+int z_get_pid(void)
+{
+#ifdef _WIN32
+    return _getpid();
+#else
+    return getpid();
+#endif
+}

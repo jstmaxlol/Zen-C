@@ -1316,20 +1316,9 @@ void run_repl(const char *self_path)
                         continue;
                     }
 
-                    char edit_path[256];
-                    const char *tmpdir = getenv("TEMP");
-                    if (!tmpdir)
-                    {
-                        tmpdir = getenv("TMP");
-                    }
-                    if (!tmpdir && !z_is_windows())
-                    {
-                        tmpdir = "/tmp";
-                    }
-                    if (!tmpdir)
-                    {
-                        tmpdir = ".";
-                    }
+
+                    char edit_path[MAX_PATH_SIZE];
+                    const char *tmpdir = z_get_temp_dir();
                     snprintf(edit_path, sizeof(edit_path), "%s/zprep_edit_%d.zc", tmpdir, rand());
                     FILE *f = fopen(edit_path, "w");
                     if (f)
@@ -1679,8 +1668,9 @@ void run_repl(const char *self_path)
                         strcat(probe_code, " }");
 
                         // Execute
-                        char tmp_path[256];
-                        snprintf(tmp_path, sizeof(tmp_path), "/tmp/zen_repl_vars_%d.zc", getpid());
+                        char tmp_path[MAX_PATH_SIZE];
+                        snprintf(tmp_path, sizeof(tmp_path), "%s/zen_repl_vars_%d.zc",
+                                 z_get_temp_dir(), z_get_pid());
                         FILE *f = fopen(tmp_path, "w");
                         if (f)
                         {
@@ -1753,20 +1743,9 @@ void run_repl(const char *self_path)
                     strcat(probe_code, expr);
                     strcat(probe_code, "); }");
 
-                    char tmp_path[256];
-                    const char *tmpdir = getenv("TEMP");
-                    if (!tmpdir)
-                    {
-                        tmpdir = getenv("TMP");
-                    }
-                    if (!tmpdir && !z_is_windows())
-                    {
-                        tmpdir = "/tmp";
-                    }
-                    if (!tmpdir)
-                    {
-                        tmpdir = ".";
-                    }
+
+                    char tmp_path[MAX_PATH_SIZE];
+                    const char *tmpdir = z_get_temp_dir();
                     snprintf(tmp_path, sizeof(tmp_path), "%s/zprep_repl_type_%d.zc", tmpdir,
                              rand());
                     FILE *f = fopen(tmp_path, "w");
@@ -1878,20 +1857,9 @@ void run_repl(const char *self_path)
                                  "(%.6fs/iter)\\n\", _elapsed, _elapsed/1000); }\n");
                     strcat(code, "}");
 
-                    char tmp_path[256];
-                    const char *tmpdir = getenv("TEMP");
-                    if (!tmpdir)
-                    {
-                        tmpdir = getenv("TMP");
-                    }
-                    if (!tmpdir && !z_is_windows())
-                    {
-                        tmpdir = "/tmp";
-                    }
-                    if (!tmpdir)
-                    {
-                        tmpdir = ".";
-                    }
+
+                    char tmp_path[MAX_PATH_SIZE];
+                    const char *tmpdir = z_get_temp_dir();
                     snprintf(tmp_path, sizeof(tmp_path), "%s/zprep_repl_time_%d.zc", tmpdir,
                              rand());
                     FILE *f = fopen(tmp_path, "w");
@@ -1966,7 +1934,7 @@ void run_repl(const char *self_path)
                     free(main_code);
                     free(expr_buf);
 
-                    char tmp_path[256];
+                    char tmp_path[MAX_PATH_SIZE];
                     sprintf(tmp_path, "/tmp/zprep_repl_c_%d.zc", rand());
                     FILE *f = fopen(tmp_path, "w");
                     if (f)
@@ -1999,8 +1967,8 @@ void run_repl(const char *self_path)
                     free(global_code);
                     free(main_code);
 
-                    char tmp_path[256];
-                    sprintf(tmp_path, "/tmp/zprep_repl_run_%d.zc", rand());
+                    char tmp_path[MAX_PATH_SIZE];
+                    sprintf(tmp_path, "%s/zprep_repl_run_%d.zc", z_get_temp_dir(), rand());
                     FILE *f = fopen(tmp_path, "w");
                     if (f)
                     {
@@ -2372,8 +2340,8 @@ void run_repl(const char *self_path)
                     strcat(probe_code, last_line);
                     strcat(probe_code, "); }");
 
-                    char p_path[256];
-                    sprintf(p_path, "/tmp/zprep_repl_probe_%d.zc", rand());
+                    char p_path[MAX_PATH_SIZE];
+                    sprintf(p_path, "%s/zprep_repl_probe_%d.zc", z_get_temp_dir(), rand());
                     FILE *pf = fopen(p_path, "w");
                     if (pf)
                     {
@@ -2437,8 +2405,8 @@ void run_repl(const char *self_path)
 
             strcat(full_code, " }");
 
-            char tmp_path[256];
-            sprintf(tmp_path, "/tmp/zprep_repl_%d.zc", rand());
+            char tmp_path[MAX_PATH_SIZE];
+            sprintf(tmp_path, "%s/zprep_repl_%d.zc", z_get_temp_dir(), rand());
             FILE *f = fopen(tmp_path, "w");
             if (!f)
             {
