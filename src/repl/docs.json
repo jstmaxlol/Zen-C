@@ -1,0 +1,410 @@
+[
+    {
+        "name": "Vec",
+        "doc": "Vec<T> - Dynamic array (generic)\n  Fields: data: T*, len: usize, cap: usize\n  Methods: new, push, pop, get, set, insert, remove, contains, clear, free, clone, reverse, first, last, length, is_empty, eq"
+    },
+    {
+        "name": "Vec.new",
+        "doc": "fn Vec<T>::new() -> Vec<T>\n  Creates an empty vector."
+    },
+    {
+        "name": "Vec.push",
+        "doc": "fn push(self, item: T)\n  Appends item to the end. Auto-grows capacity."
+    },
+    {
+        "name": "Vec.pop",
+        "doc": "fn pop(self) -> T\n  Removes and returns the last element. Panics if empty."
+    },
+    {
+        "name": "Vec.get",
+        "doc": "fn get(self, idx: usize) -> T\n  Returns element at index. Panics if out of bounds."
+    },
+    {
+        "name": "Vec.set",
+        "doc": "fn set(self, idx: usize, item: T)\n  Sets element at index. Panics if out of bounds."
+    },
+    {
+        "name": "Vec.insert",
+        "doc": "fn insert(self, idx: usize, item: T)\n  Inserts item at index, shifting elements right."
+    },
+    {
+        "name": "Vec.remove",
+        "doc": "fn remove(self, idx: usize) -> T\n  Removes and returns element at index, shifting elements left."
+    },
+    {
+        "name": "Vec.contains",
+        "doc": "fn contains(self, item: T) -> bool\n  Returns true if item is in the vector."
+    },
+    {
+        "name": "Vec.clear",
+        "doc": "fn clear(self)\n  Removes all elements but keeps capacity."
+    },
+    {
+        "name": "Vec.free",
+        "doc": "fn free(self)\n  Frees memory. Sets data to null."
+    },
+    {
+        "name": "Vec.clone",
+        "doc": "fn clone(self) -> Vec<T>\n  Returns a shallow copy."
+    },
+    {
+        "name": "Vec.reverse",
+        "doc": "fn reverse(self)\n  Reverses elements in place."
+    },
+    {
+        "name": "Vec.first",
+        "doc": "fn first(self) -> T\n  Returns first element. Panics if empty."
+    },
+    {
+        "name": "Vec.last",
+        "doc": "fn last(self) -> T\n  Returns last element. Panics if empty."
+    },
+    {
+        "name": "Vec.length",
+        "doc": "fn length(self) -> usize\n  Returns number of elements."
+    },
+    {
+        "name": "Vec.is_empty",
+        "doc": "fn is_empty(self) -> bool\n  Returns true if length is 0."
+    },
+    {
+        "name": "String",
+        "doc": "String - Mutable string (alias for char*)\n  Methods: len, split, trim, contains, starts_with, ends_with, to_upper, to_lower, substring, find"
+    },
+    {
+        "name": "String.len",
+        "doc": "fn len(self) -> usize\n  Returns string length."
+    },
+    {
+        "name": "String.contains",
+        "doc": "fn contains(self, substr: string) -> bool\n  Returns true if string contains substr."
+    },
+    {
+        "name": "String.starts_with",
+        "doc": "fn starts_with(self, prefix: string) -> bool\n  Returns true if string starts with prefix."
+    },
+    {
+        "name": "String.ends_with",
+        "doc": "fn ends_with(self, suffix: string) -> bool\n  Returns true if string ends with suffix."
+    },
+    {
+        "name": "String.substring",
+        "doc": "fn substring(self, start: usize, len: usize) -> string\n  Returns a substring. Caller must free."
+    },
+    {
+        "name": "String.find",
+        "doc": "fn find(self, substr: string) -> int\n  Returns index of substr, or -1 if not found."
+    },
+    {
+        "name": "println",
+        "doc": "println \"format string {expr}\"\n  Prints to stdout with newline. Auto-formats {expr} values."
+    },
+    {
+        "name": "print",
+        "doc": "print \"format string {expr}\"\n  Prints to stdout without newline."
+    },
+    {
+        "name": "eprintln",
+        "doc": "eprintln \"format string\"\n  Prints to stderr with newline."
+    },
+    {
+        "name": "eprint",
+        "doc": "eprint \"format string\"\n  Prints to stderr without newline."
+    },
+    {
+        "name": "guard",
+        "doc": "guard condition else action\n  Early exit pattern. Executes action if condition is false.\n  Example: guard ptr != NULL else return;"
+    },
+    {
+        "name": "defer",
+        "doc": "defer statement\n  Executes statement at end of scope.\n  Example: defer free(ptr);"
+    },
+    {
+        "name": "sizeof",
+        "doc": "sizeof(type) or sizeof(expr)\n  Returns size in bytes."
+    },
+    {
+        "name": "typeof",
+        "doc": "typeof(expr)\n  Returns the type of expression (compile-time)."
+    },
+    {
+        "name": "malloc",
+        "doc": "void *malloc(size_t size)\n  Allocates size bytes. Returns pointer or NULL. Free with free()."
+    },
+    {
+        "name": "free",
+        "doc": "void free(void *ptr)\n  Frees memory allocated by malloc/calloc/realloc."
+    },
+    {
+        "name": "calloc",
+        "doc": "void *calloc(size_t n, size_t size)\n  Allocates n*size bytes, zeroed. Returns pointer or NULL."
+    },
+    {
+        "name": "realloc",
+        "doc": "void *realloc(void *ptr, size_t size)\n  Resizes allocation to size bytes. May move memory."
+    },
+    {
+        "name": "memcpy",
+        "doc": "void *memcpy(void *dest, const void *src, size_t n)\n  Copies n bytes from src to dest. Returns dest. No overlap."
+    },
+    {
+        "name": "memmove",
+        "doc": "void *memmove(void *dest, const void *src, size_t n)\n  Copies n bytes, handles overlapping regions."
+    },
+    {
+        "name": "memset",
+        "doc": "void *memset(void *s, int c, size_t n)\n  Sets n bytes of s to value c."
+    },
+    {
+        "name": "strcpy",
+        "doc": "char *strcpy(char *dest, const char *src)\n  Copies string src to dest. Unsafe!"
+    },
+    {
+        "name": "strncpy",
+        "doc": "char *strncpy(char *dest, const char *src, size_t n)\n  Copies at most n chars. Pad with nulls."
+    },
+    {
+        "name": "strcat",
+        "doc": "char *strcat(char *dest, const char *src)\n  Appends src to dest. Unsafe!"
+    },
+    {
+        "name": "strncat",
+        "doc": "char *strncat(char *dest, const char *src, size_t n)\n  Appends at most n chars."
+    },
+    {
+        "name": "strlen",
+        "doc": "size_t strlen(const char *s)\n  Returns length of string."
+    },
+    {
+        "name": "strcmp",
+        "doc": "int strcmp(const char *s1, const char *s2)\n  Compares strings."
+    },
+    {
+        "name": "strncmp",
+        "doc": "int strncmp(const char *s1, const char *s2, size_t n)\n  Compares first n chars."
+    },
+    {
+        "name": "strdup",
+        "doc": "char *strdup(const char *s)\n  Duplicates string. Caller must free."
+    },
+    {
+        "name": "atoi",
+        "doc": "int atoi(const char *nptr)\n  Converts string to integer."
+    },
+    {
+        "name": "atof",
+        "doc": "double atof(const char *nptr)\n  Converts string to double."
+    },
+    {
+        "name": "rand",
+        "doc": "int rand(void)\n  Returns pseudo-random integer."
+    },
+    {
+        "name": "srand",
+        "doc": "void srand(unsigned int seed)\n  Seeds the random number generator."
+    },
+    {
+        "name": "time",
+        "doc": "time_t time(time_t *tloc)\n  Returns current time in seconds since Epoch."
+    },
+    {
+        "name": ":help",
+        "doc": ":help         Show this help message or list of commands"
+    },
+    {
+        "name": ":reset",
+        "doc": ":reset        Reset the REPL state (clear variables, imports, etc)"
+    },
+    {
+        "name": ":imports",
+        "doc": ":imports      List active imports"
+    },
+    {
+        "name": ":vars",
+        "doc": ":vars         List defined variables"
+    },
+    {
+        "name": ":funcs",
+        "doc": ":funcs        List defined functions"
+    },
+    {
+        "name": ":structs",
+        "doc": ":structs      List defined structs"
+    },
+    {
+        "name": ":history",
+        "doc": ":history      Show command history"
+    },
+    {
+        "name": ":type",
+        "doc": ":type <expr>  Show the type of an expression"
+    },
+    {
+        "name": ":time",
+        "doc": ":time <expr>  Time the execution of an expression"
+    },
+    {
+        "name": ":c",
+        "doc": ":c <code...>, Output generated C code for the given Zen C code"
+    },
+    {
+        "name": ":doc",
+        "doc": ":doc <symbol> Show documentation for symbol"
+    },
+    {
+        "name": ":run",
+        "doc": ":run <file>   Run a Zen C file"
+    },
+    {
+        "name": ":edit",
+        "doc": ":edit [index] Edit the last command (or history index) in external editor"
+    },
+    {
+        "name": ":save",
+        "doc": ":save <file>  Save current session to a file"
+    },
+    {
+        "name": ":load",
+        "doc": ":load <file>  Load commands from a file"
+    },
+    {
+        "name": ":watch",
+        "doc": ":watch <expr> Watch an expression (re-evaluated on every line)"
+    },
+    {
+        "name": ":unwatch",
+        "doc": ":unwatch <id> Stop watching an expression"
+    },
+    {
+        "name": ":undo",
+        "doc": ":undo         Undo the last command (remove from history)"
+    },
+    {
+        "name": ":delete",
+        "doc": ":delete <id>  Delete a specific command from history"
+    },
+    {
+        "name": ":clear",
+        "doc": ":clear        Clear the screen"
+    },
+    {
+        "name": ":quit",
+        "doc": ":quit         Exit the REPL"
+    },
+    {
+        "name": "strlen",
+        "doc": "size_t strlen(const char *s)\n  Returns length of string (not including null terminator)."
+    },
+    {
+        "name": "strcpy",
+        "doc": "char *strcpy(char *dest, const char *src)\n  Copies src to dest including null terminator. No bounds check."
+    },
+    {
+        "name": "strncpy",
+        "doc": "char *strncpy(char *dest, const char *src, size_t n)\n  Copies up to n chars. May not null-terminate."
+    },
+    {
+        "name": "strcat",
+        "doc": "char *strcat(char *dest, const char *src)\n  Appends src to dest."
+    },
+    {
+        "name": "strncat",
+        "doc": "char *strncat(char *dest, const char *src, size_t n)\n  Appends at most n chars."
+    },
+    {
+        "name": "strcmp",
+        "doc": "int strcmp(const char *s1, const char *s2)\n  Compares strings. Returns 0 if equal, <0 or >0 otherwise."
+    },
+    {
+        "name": "strncmp",
+        "doc": "int strncmp(const char *s1, const char *s2, size_t n)\n  Compares up to n characters."
+    },
+    {
+        "name": "strstr",
+        "doc": "char *strstr(const char *haystack, const char *needle)\n  Finds first occurrence of needle. Returns pointer or NULL."
+    },
+    {
+        "name": "strchr",
+        "doc": "char *strchr(const char *s, int c)\n  Finds first occurrence of char c. Returns pointer or NULL."
+    },
+    {
+        "name": "strdup",
+        "doc": "char *strdup(const char *s)\n  Duplicates string. Caller must free the result."
+    },
+    {
+        "name": "printf",
+        "doc": "int printf(const char *fmt, ...)\n  Prints formatted output to stdout. Returns chars written."
+    },
+    {
+        "name": "sprintf",
+        "doc": "int sprintf(char *str, const char *fmt, ...)\n  Prints formatted output to string buffer."
+    },
+    {
+        "name": "snprintf",
+        "doc": "int snprintf(char *str, size_t n, const char *fmt, ...)\n  Safe sprintf with size limit."
+    },
+    {
+        "name": "fprintf",
+        "doc": "int fprintf(FILE *f, const char *fmt, ...)\n  Prints formatted output to file stream."
+    },
+    {
+        "name": "scanf",
+        "doc": "int scanf(const char *fmt, ...)\n  Reads formatted input from stdin."
+    },
+    {
+        "name": "fopen",
+        "doc": "FILE *fopen(const char *path, const char *mode)\n  Opens file. Modes: \"r\", \"w\", \"a\", \"rb\", \"wb\". Returns NULL on error."
+    },
+    {
+        "name": "fclose",
+        "doc": "int fclose(FILE *f)\n  Closes file. Returns 0 on success."
+    },
+    {
+        "name": "fread",
+        "doc": "size_t fread(void *ptr, size_t size, size_t n, FILE *f)\n  Reads n items of size bytes. Returns items read."
+    },
+    {
+        "name": "fwrite",
+        "doc": "size_t fwrite(const void *ptr, size_t size, size_t n, FILE *f)\n  Writes n items of size bytes. Returns items written."
+    },
+    {
+        "name": "fgets",
+        "doc": "char *fgets(char *s, int n, FILE *f)\n  Reads line up to n-1 chars. Includes newline. Returns s or NULL."
+    },
+    {
+        "name": "fputs",
+        "doc": "int fputs(const char *s, FILE *f)\n  Writes string to file. Returns non-negative or EOF."
+    },
+    {
+        "name": "exit",
+        "doc": "void exit(int status)\n  Terminates program with status code. 0 = success."
+    },
+    {
+        "name": "atoi",
+        "doc": "int atoi(const char *s)\n  Converts string to int. Returns 0 on error."
+    },
+    {
+        "name": "atof",
+        "doc": "double atof(const char *s)\n  Converts string to double."
+    },
+    {
+        "name": "abs",
+        "doc": "int abs(int n)\n  Returns absolute value."
+    },
+    {
+        "name": "rand",
+        "doc": "int rand(void)\n  Returns pseudo-random int in [0, RAND_MAX]."
+    },
+    {
+        "name": "srand",
+        "doc": "void srand(unsigned seed)\n  Seeds the random number generator."
+    },
+    {
+        "name": "time",
+        "doc": "time_t time(time_t *tloc)\n  Returns current time in seconds since Epoch."
+    },
+    {
+        "name": "qsort",
+        "doc": "void qsort(void *base, size_t n, size_t size, int(*cmp)(const void*, const void*))\n  Quicksorts array in-place."
+    }
+]

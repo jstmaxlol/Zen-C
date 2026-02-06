@@ -145,7 +145,9 @@ install: $(TARGET)
 	$(CP) std $(SHAREDIR)/
 	
 	# Install facts
-	$(INSTALL) -m 644 src/zen/facts.json $(SHAREDIR)/facts.json	
+	$(INSTALL) -m 644 src/zen/facts.json $(SHAREDIR)/facts.json
+	$(INSTALL) -m 644 src/repl/docs.json $(SHAREDIR)/docs.json
+	
 	# Install plugin headers
 	$(INSTALL) -d $(INCLUDEDIR)
 	$(INSTALL) -m 644 plugins/zprep_plugin.h $(INCLUDEDIR)/zprep_plugin.h

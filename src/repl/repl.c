@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "cJSON.h"
 
 ASTNode *parse_program(ParserContext *ctx, Lexer *l);
 
@@ -73,6 +74,93 @@ static void repl_error_callback(void *data, Token t, const char *msg)
 }
 
 // Raw mode functions are now in repl_os.c
+
+typedef struct
+{
+    char *name;
+    char *doc;
+} ReplDoc;
+
+static ReplDoc *repl_docs = NULL;
+static int repl_doc_count = 0;
+
+static void load_docs(void)
+{
+    const char *search_paths[] = {"src/repl/docs.json", // Dev path
+                                  "docs.json",          // CWD
+#ifdef ZEN_SHARE_DIR
+                                  ZEN_SHARE_DIR "/docs.json", // Install path
+#endif
+                                  "/usr/local/share/zenc/docs.json",
+                                  "/usr/share/zenc/docs.json",
+                                  NULL};
+
+    FILE *f = NULL;
+    for (int i = 0; search_paths[i]; i++)
+    {
+        f = fopen(search_paths[i], "r");
+        if (f)
+        {
+            break;
+        }
+    }
+
+    if (!f)
+    {
+        return;
+    }
+
+    fseek(f, 0, SEEK_END);
+    long len = ftell(f);
+    fseek(f, 0, SEEK_SET);
+
+    char *data = malloc(len + 1);
+    if (data)
+    {
+        fread(data, 1, len, f);
+        data[len] = 0;
+    }
+    fclose(f);
+
+    if (!data)
+    {
+        return;
+    }
+
+    cJSON *json = cJSON_Parse(data);
+    free(data);
+
+    if (!json)
+    {
+        return;
+    }
+
+    if (cJSON_IsArray(json))
+    {
+        repl_doc_count = cJSON_GetArraySize(json);
+        repl_docs = calloc(repl_doc_count + 1, sizeof(ReplDoc));
+
+        cJSON *item = NULL;
+        int i = 0;
+        cJSON_ArrayForEach(item, json)
+        {
+            cJSON *name = cJSON_GetObjectItem(item, "name");
+            cJSON *doc = cJSON_GetObjectItem(item, "doc");
+
+            if (cJSON_IsString(name))
+            {
+                repl_docs[i].name = strdup(name->valuestring);
+            }
+            if (cJSON_IsString(doc))
+            {
+                repl_docs[i].doc = strdup(doc->valuestring);
+            }
+
+            i++;
+        }
+    }
+    cJSON_Delete(json);
+}
 
 static const char *KEYWORDS[] = {
     "fn",       "struct",  "var",   "let",   "def",    "const",    "return",  "if",
@@ -2075,151 +2163,23 @@ void run_repl(const char *self_path)
                     }
 
                     // Documentation database
-
-                    struct
+                    if (!repl_docs)
                     {
-                        const char *name;
-                        const char *doc;
-                    } docs[] = {
-                        {"Vec", "Vec<T> - Dynamic array (generic)\n  Fields: data: T*, "
-                                "len: usize, cap: "
-                                "usize\n  Methods: new, push, pop, get, set, insert, "
-                                "remove, contains, "
-                                "clear, free, clone, reverse, first, last, length, "
-                                "is_empty, eq"},
-                        {"Vec.new", "fn Vec<T>::new() -> Vec<T>\n  Creates an empty vector."},
-                        {"Vec.push", "fn push(self, item: T)\n  Appends item to the end. "
-                                     "Auto-grows capacity."},
-                        {"Vec.pop", "fn pop(self) -> T\n  Removes and returns the last element. "
-                                    "Panics if empty."},
-                        {"Vec.get", "fn get(self, idx: usize) -> T\n  Returns element at index. "
-                                    "Panics if out of bounds."},
-                        {"Vec.set", "fn set(self, idx: usize, item: T)\n  Sets element at index. "
-                                    "Panics if out of bounds."},
-                        {"Vec.insert", "fn insert(self, idx: usize, item: T)\n  Inserts item at "
-                                       "index, shifting elements right."},
-                        {"Vec.remove", "fn remove(self, idx: usize) -> T\n  Removes and returns "
-                                       "element at index, shifting elements left."},
-                        {"Vec.contains", "fn contains(self, item: T) -> bool\n  Returns true if "
-                                         "item is in the vector."},
-                        {"Vec.clear", "fn clear(self)\n  Removes all elements but keeps capacity."},
-                        {"Vec.free", "fn free(self)\n  Frees memory. Sets data to null."},
-                        {"Vec.clone", "fn clone(self) -> Vec<T>\n  Returns a shallow copy."},
-                        {"Vec.reverse", "fn reverse(self)\n  Reverses elements in place."},
-                        {"Vec.first", "fn first(self) -> T\n  Returns first element. "
-                                      "Panics if empty."},
-                        {"Vec.last",
-                         "fn last(self) -> T\n  Returns last element. Panics if empty."},
-                        {"Vec.length", "fn length(self) -> usize\n  Returns number of elements."},
-                        {"Vec.is_empty",
-                         "fn is_empty(self) -> bool\n  Returns true if length is 0."},
-                        {"String", "String - Mutable string (alias for char*)\n  "
-                                   "Methods: len, split, trim, "
-                                   "contains, starts_with, ends_with, to_upper, "
-                                   "to_lower, substring, find"},
-                        {"String.len", "fn len(self) -> usize\n  Returns string length."},
-                        {"String.contains", "fn contains(self, substr: string) -> bool\n  Returns "
-                                            "true if string contains substr."},
-                        {"String.starts_with", "fn starts_with(self, prefix: string) -> bool\n  "
-                                               "Returns true if string starts with prefix."},
-                        {"String.ends_with", "fn ends_with(self, suffix: string) -> bool\n  "
-                                             "Returns true if string ends with suffix."},
-                        {"String.substring", "fn substring(self, start: usize, len: usize) -> "
-                                             "string\n  Returns a substring. Caller must free."},
-                        {"String.find", "fn find(self, substr: string) -> int\n  Returns index of "
-                                        "substr, or -1 if not found."},
-                        {"println", "println \"format string {expr}\"\n  Prints to stdout with "
-                                    "newline. Auto-formats {expr} values."},
-                        {"print", "print \"format string {expr}\"\n  Prints to stdout "
-                                  "without newline."},
-                        {"eprintln",
-                         "eprintln \"format string\"\n  Prints to stderr with newline."},
-                        {"eprint", "eprint \"format string\"\n  Prints to stderr without newline."},
-                        {"guard", "guard condition else action\n  Early exit pattern. "
-                                  "Executes action if "
-                                  "condition is false.\n  Example: guard ptr != NULL "
-                                  "else return;"},
-                        {"defer", "defer statement\n  Executes statement at end of scope.\n  "
-                                  "Example: defer free(ptr);"},
-                        {"sizeof", "sizeof(type) or sizeof(expr)\n  Returns size in bytes."},
-                        {"typeof", "typeof(expr)\n  Returns the type of expression "
-                                   "(compile-time)."},
-                        {"malloc", "void *malloc(size_t size)\n  Allocates size bytes. Returns "
-                                   "pointer or NULL. Free with free()."},
-                        {"free", "void free(void *ptr)\n  Frees memory allocated by "
-                                 "malloc/calloc/realloc."},
-                        {"calloc", "void *calloc(size_t n, size_t size)\n  Allocates n*size bytes, "
-                                   "zeroed. Returns pointer or NULL."},
-                        {"realloc", "void *realloc(void *ptr, size_t size)\n  Resizes allocation "
-                                    "to size bytes. May move memory."},
-                        {"memcpy", "void *memcpy(void *dest, const void *src, size_t n)\n  Copies "
-                                   "n bytes from src to dest. Returns dest. No overlap."},
-                        {"memmove", "void *memmove(void *dest, const void *src, size_t n)\n  "
-                                    "Copies n bytes, handles overlapping regions."},
-                        {"memset", "void *memset(void *s, int c, size_t n)\n  Sets n "
-                                   "bytes of s to value c."},
-                        {"strlen", "size_t strlen(const char *s)\n  Returns length of string (not "
-                                   "including null terminator)."},
-                        {"strcpy", "char *strcpy(char *dest, const char *src)\n  Copies src to "
-                                   "dest including null terminator. No bounds check."},
-                        {"strncpy", "char *strncpy(char *dest, const char *src, size_t n)\n  "
-                                    "Copies up to n chars. May not null-terminate."},
-                        {"strcat", "char *strcat(char *dest, const char *src)\n  Appends "
-                                   "src to dest."},
-                        {"strcmp", "int strcmp(const char *s1, const char *s2)\n  Compares "
-                                   "strings. Returns 0 if equal, <0 or >0 otherwise."},
-                        {"strncmp", "int strncmp(const char *s1, const char *s2, size_t n)\n  "
-                                    "Compares up to n characters."},
-                        {"strstr", "char *strstr(const char *haystack, const char *needle)\n  "
-                                   "Finds first occurrence of needle. Returns pointer or NULL."},
-                        {"strchr", "char *strchr(const char *s, int c)\n  Finds first occurrence "
-                                   "of char c. Returns pointer or NULL."},
-                        {"strdup", "char *strdup(const char *s)\n  Duplicates string. Caller must "
-                                   "free the result."},
-                        {"printf", "int printf(const char *fmt, ...)\n  Prints formatted output to "
-                                   "stdout. Returns chars written."},
-                        {"sprintf", "int sprintf(char *str, const char *fmt, ...)\n  Prints "
-                                    "formatted output to string buffer."},
-                        {"snprintf", "int snprintf(char *str, size_t n, const char *fmt, ...)\n  "
-                                     "Safe sprintf with size limit."},
-                        {"fprintf", "int fprintf(FILE *f, const char *fmt, ...)\n  Prints "
-                                    "formatted output to file stream."},
-                        {"scanf", "int scanf(const char *fmt, ...)\n  Reads formatted "
-                                  "input from stdin."},
-                        {"fopen", "FILE *fopen(const char *path, const char *mode)\n  Opens file. "
-                                  "Modes: "
-                                  "\"r\", \"w\", \"a\", \"rb\", \"wb\". Returns NULL on error."},
-                        {"fclose", "int fclose(FILE *f)\n  Closes file. Returns 0 on success."},
-                        {"fread", "size_t fread(void *ptr, size_t size, size_t n, FILE *f)\n  "
-                                  "Reads n items of size bytes. Returns items read."},
-                        {"fwrite", "size_t fwrite(const void *ptr, size_t size, size_t n, FILE "
-                                   "*f)\n  Writes n items of size bytes. Returns items written."},
-                        {"fgets", "char *fgets(char *s, int n, FILE *f)\n  Reads line up to n-1 "
-                                  "chars. Includes newline. Returns s or NULL."},
-                        {"fputs", "int fputs(const char *s, FILE *f)\n  Writes string to file. "
-                                  "Returns non-negative or EOF."},
-                        {"exit", "void exit(int status)\n  Terminates program with "
-                                 "status code. 0 "
-                                 "= success."},
-                        {"atoi", "int atoi(const char *s)\n  Converts string to int. "
-                                 "Returns 0 on error."},
-                        {"atof", "double atof(const char *s)\n  Converts string to double."},
-                        {"abs", "int abs(int n)\n  Returns absolute value."},
-                        {"rand", "int rand(void)\n  Returns pseudo-random int in [0, RAND_MAX]."},
-                        {"srand", "void srand(unsigned seed)\n  Seeds the random number "
-                                  "generator."},
-                        {"qsort", "void qsort(void *base, size_t n, size_t size, int(*cmp)(const "
-                                  "void*, const void*))\n  Quicksorts array in-place."},
-                        {NULL, NULL}};
+                        load_docs();
+                    }
 
                     int found = 0;
-                    for (int i = 0; docs[i].name != NULL; i++)
+                    if (repl_docs)
                     {
-                        if (0 == strcmp(sym, docs[i].name))
+                        for (int i = 0; i < repl_doc_count; i++)
                         {
-                            printf("\033[1;36m%s\033[0m\n%s\n", docs[i].name, docs[i].doc);
-                            found = 1;
-                            break;
+                            if (repl_docs[i].name && 0 == strcmp(sym, repl_docs[i].name))
+                            {
+                                printf("\033[1;36m%s\033[0m\n%s\n", repl_docs[i].name,
+                                       repl_docs[i].doc);
+                                found = 1;
+                                break;
+                            }
                         }
                     }
                     if (!found)
