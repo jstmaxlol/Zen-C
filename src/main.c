@@ -310,9 +310,14 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    // Run Semantic Analysis (Type Checker) only in check mode for now
+    // to avoid breaking existing tests that rely on looser C-style typing.
     if (g_config.mode_check)
     {
-        // Just verify
+        if (check_program(&ctx, root) != 0)
+        {
+            return 1;
+        }
         printf("Check passed.\n");
         return 0;
     }

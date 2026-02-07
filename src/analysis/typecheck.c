@@ -13,6 +13,12 @@ static void tc_error(TypeChecker *tc, Token t, const char *msg)
     tc->error_count++;
 }
 
+static void tc_error_with_hints(TypeChecker *tc, Token t, const char *msg, const char *const *hints)
+{
+    zerror_with_hints(t, msg, hints);
+    tc->error_count++;
+}
+
 static void tc_enter_scope(TypeChecker *tc)
 {
     Scope *s = malloc(sizeof(Scope));
@@ -92,11 +98,12 @@ static void check_use_validity(TypeChecker *tc, ASTNode *var_node, ZenSymbol *sy
     if (sym->is_moved)
     {
         char msg[256];
-        snprintf(
-            msg, 255,
-            "Use of moved value '%s'. This type owns resources and cannot be implicitly copied.",
-            sym->name);
-        tc_error(tc, var_node->token, msg);
+        snprintf(msg, 255, "Use of moved value '%s'", sym->name);
+
+        const char *hints[] = {"This type owns resources and cannot be implicitly copied",
+                               "Consider using a reference ('&') to borrow the value instead",
+                               NULL};
+        tc_error_with_hints(tc, var_node->token, msg, hints);
     }
 }
 
@@ -128,15 +135,26 @@ static void mark_symbol_valid(TypeChecker *tc, ZenSymbol *sym)
 // ** Node Checkers **
 
 static void check_node(TypeChecker *tc, ASTNode *node);
+static int check_type_compatibility(TypeChecker *tc, Type *target, Type *value, Token t);
 
 static void check_expr_binary(TypeChecker *tc, ASTNode *node)
 {
     check_node(tc, node->binary.left);
     check_node(tc, node->binary.right);
 
-    // Assignment Logic for Moves
-    if (strcmp(node->binary.op, "=") == 0)
+    Type *left_type = node->binary.left->type_info;
+    Type *right_type = node->binary.right->type_info;
+    const char *op = node->binary.op;
+
+    // Assignment Logic for Moves (and type compatibility)
+    if (strcmp(op, "=") == 0)
     {
+        // Check type compatibility for assignment
+        if (left_type && right_type)
+        {
+            check_type_compatibility(tc, left_type, right_type, node->binary.right->token);
+        }
+
         // If RHS is a var, it might Move
         if (node->binary.right->type == NODE_EXPR_VAR)
         {
@@ -156,6 +174,98 @@ static void check_expr_binary(TypeChecker *tc, ASTNode *node)
                 mark_symbol_valid(tc, lhs_sym);
             }
         }
+
+        // Result type is same as LHS
+        node->type_info = left_type;
+        return;
+    }
+
+    // Arithmetic operators: +, -, *, /, %
+    if (strcmp(op, "+") == 0 || strcmp(op, "-") == 0 || strcmp(op, "*") == 0 ||
+        strcmp(op, "/") == 0 || strcmp(op, "%") == 0)
+    {
+        if (left_type && right_type)
+        {
+            int left_numeric = is_integer_type(left_type) || is_float_type(left_type);
+            int right_numeric = is_integer_type(right_type) || is_float_type(right_type);
+
+            if (!left_numeric || !right_numeric)
+            {
+                char msg[256];
+                snprintf(msg, sizeof(msg), "Operator '%s' requires numeric operands", op);
+                const char *hints[] = {
+                    "Arithmetic operators can only be used with integer or float types", NULL};
+                tc_error_with_hints(tc, node->token, msg, hints);
+            }
+            else
+            {
+                // Result type: if either is float, result is float; else left type
+                if (is_float_type(left_type) || is_float_type(right_type))
+                {
+                    node->type_info = type_new(TYPE_F64);
+                }
+                else
+                {
+                    node->type_info = left_type;
+                }
+            }
+        }
+        return;
+    }
+
+    // Comparison operators: ==, !=, <, >, <=, >=
+    if (strcmp(op, "==") == 0 || strcmp(op, "!=") == 0 || strcmp(op, "<") == 0 ||
+        strcmp(op, ">") == 0 || strcmp(op, "<=") == 0 || strcmp(op, ">=") == 0)
+    {
+        // Result is always bool
+        node->type_info = type_new(TYPE_BOOL);
+
+        // Operands should be comparable
+        if (left_type && right_type && !type_eq(left_type, right_type))
+        {
+            // Allow comparison between numeric types
+            int left_numeric = is_integer_type(left_type) || is_float_type(left_type);
+            int right_numeric = is_integer_type(right_type) || is_float_type(right_type);
+
+            if (!left_numeric || !right_numeric)
+            {
+                char msg[256];
+                snprintf(msg, sizeof(msg), "Cannot compare '%s' with incompatible types", op);
+                const char *hints[] = {"Ensure both operands have the same or compatible types",
+                                       NULL};
+                tc_error_with_hints(tc, node->token, msg, hints);
+            }
+        }
+        return;
+    }
+
+    // Logical operators: &&, ||
+    if (strcmp(op, "&&") == 0 || strcmp(op, "||") == 0)
+    {
+        node->type_info = type_new(TYPE_BOOL);
+        // Could validate that operands are boolean-like, but C is lax here
+        return;
+    }
+
+    // Bitwise operators: &, |, ^, <<, >>
+    if (strcmp(op, "&") == 0 || strcmp(op, "|") == 0 || strcmp(op, "^") == 0 ||
+        strcmp(op, "<<") == 0 || strcmp(op, ">>") == 0)
+    {
+        if (left_type && right_type)
+        {
+            if (!is_integer_type(left_type) || !is_integer_type(right_type))
+            {
+                char msg[256];
+                snprintf(msg, sizeof(msg), "Bitwise operator '%s' requires integer operands", op);
+                const char *hints[] = {"Bitwise operators only work on integer types", NULL};
+                tc_error_with_hints(tc, node->token, msg, hints);
+            }
+            else
+            {
+                node->type_info = left_type;
+            }
+        }
+        return;
     }
 }
 
@@ -163,32 +273,102 @@ static void check_expr_call(TypeChecker *tc, ASTNode *node)
 {
     check_node(tc, node->call.callee);
 
+    const char *func_name = NULL;
+    FuncSig *sig = NULL;
+
     // Check if the function exists (for simple direct calls)
     if (node->call.callee && node->call.callee->type == NODE_EXPR_VAR)
     {
-        const char *func_name = node->call.callee->var_ref.name;
-        // Check local scope first, then global symbols
-        ZenSymbol *sym = tc_lookup(tc, func_name);
-        if (!sym)
+        func_name = node->call.callee->var_ref.name;
+
+        // Look up function signature
+        sig = find_func(tc->pctx, func_name);
+
+        if (!sig)
         {
-            // Check global parser context for functions
-            ZenSymbol *global_sym = find_symbol_in_all(tc->pctx, func_name);
-            if (!global_sym)
+            // Check local scope first, then global symbols
+            ZenSymbol *sym = tc_lookup(tc, func_name);
+            if (!sym)
             {
-                error_undefined_function(node->call.callee->token, func_name, NULL);
-                tc->error_count++;
+                // Check global parser context for functions
+                ZenSymbol *global_sym = find_symbol_in_all(tc->pctx, func_name);
+                if (!global_sym)
+                {
+                    error_undefined_function(node->call.callee->token, func_name, NULL);
+                    tc->error_count++;
+                }
             }
         }
     }
 
-    // Check arguments
+    // Count arguments
+    int arg_count = 0;
     ASTNode *arg = node->call.args;
+    while (arg)
+    {
+        arg_count++;
+        arg = arg->next;
+    }
+
+    // Validate argument count if we have a signature
+    if (sig)
+    {
+        int min_args = sig->total_args;
+
+        // Count required args (those without defaults)
+        if (sig->defaults)
+        {
+            min_args = 0;
+            for (int i = 0; i < sig->total_args; i++)
+            {
+                if (!sig->defaults[i])
+                {
+                    min_args++;
+                }
+            }
+        }
+
+        if (arg_count < min_args)
+        {
+            char msg[256];
+            snprintf(msg, sizeof(msg), "Too few arguments: '%s' expects at least %d, got %d",
+                     func_name, min_args, arg_count);
+
+            const char *hints[] = {"Check the function signature for required parameters", NULL};
+            tc_error_with_hints(tc, node->token, msg, hints);
+        }
+        else if (arg_count > sig->total_args && !sig->is_varargs)
+        {
+            char msg[256];
+            snprintf(msg, sizeof(msg), "Too many arguments: '%s' expects %d, got %d", func_name,
+                     sig->total_args, arg_count);
+
+            const char *hints[] = {
+                "Remove extra arguments or check if you meant to call a different function", NULL};
+            tc_error_with_hints(tc, node->token, msg, hints);
+        }
+    }
+
+    // Check argument types
+    arg = node->call.args;
+    int arg_idx = 0;
     while (arg)
     {
         check_node(tc, arg);
 
+        // Validate type against signature
+        if (sig && arg_idx < sig->total_args && sig->arg_types && sig->arg_types[arg_idx])
+        {
+            Type *expected = sig->arg_types[arg_idx];
+            Type *actual = arg->type_info;
+
+            if (expected && actual)
+            {
+                check_type_compatibility(tc, expected, actual, arg->token);
+            }
+        }
+
         // If argument is passed by VALUE, and it's a variable, it MOVES.
-        // If passed by ref (UNARY '&'), the child was checked but Is Not A Var Node itself.
         if (arg->type == NODE_EXPR_VAR)
         {
             ZenSymbol *sym = tc_lookup(tc, arg->var_ref.name);
@@ -199,6 +379,7 @@ static void check_expr_call(TypeChecker *tc, ASTNode *node)
         }
 
         arg = arg->next;
+        arg_idx++;
     }
 }
 
@@ -246,8 +427,15 @@ static int check_type_compatibility(TypeChecker *tc, Type *target, Type *value, 
 
         char *t_str = type_to_string(target);
         char *v_str = type_to_string(value);
-        error_type_expected(t, t_str, v_str);
-        tc->error_count++;
+
+        char msg[512];
+        snprintf(msg, sizeof(msg), "Type mismatch: expected '%s', but found '%s'", t_str, v_str);
+
+        const char *hints[] = {
+            "Check if you need an explicit cast",
+            "Ensure the types match exactly (no implicit conversions for strict types)", NULL};
+
+        tc_error_with_hints(tc, t, msg, hints);
         free(t_str);
         free(v_str);
         return 0;
@@ -267,6 +455,11 @@ static void check_var_decl(TypeChecker *tc, ASTNode *node)
         if (decl_type && init_type)
         {
             check_type_compatibility(tc, decl_type, init_type, node->token);
+        }
+        else
+        {
+            printf("Check skipped for '%s': decl=%p, init=%p\n", node->var_decl.name,
+                   (void *)decl_type, (void *)init_type);
         }
 
         // Move Analysis: If initializing from another variable, it moves.
@@ -290,6 +483,63 @@ static void check_var_decl(TypeChecker *tc, ASTNode *node)
     tc_add_symbol(tc, node->var_decl.name, t, node->token);
 }
 
+static int block_always_returns(ASTNode *block);
+
+static int stmt_always_returns(ASTNode *stmt)
+{
+    if (!stmt)
+    {
+        return 0;
+    }
+
+    switch (stmt->type)
+    {
+    case NODE_RETURN:
+        return 1;
+
+    case NODE_BLOCK:
+        return block_always_returns(stmt);
+
+    case NODE_IF:
+        // Both branches must return for if to always return
+        if (stmt->if_stmt.then_body && stmt->if_stmt.else_body)
+        {
+            return stmt_always_returns(stmt->if_stmt.then_body) &&
+                   stmt_always_returns(stmt->if_stmt.else_body);
+        }
+        return 0;
+
+    case NODE_MATCH:
+        // TODO: Check all cases return and there's a default
+        return 0;
+
+    case NODE_LOOP:
+        return 0;
+
+    default:
+        return 0;
+    }
+}
+
+static int block_always_returns(ASTNode *block)
+{
+    if (!block || block->type != NODE_BLOCK)
+    {
+        return 0;
+    }
+
+    ASTNode *stmt = block->block.statements;
+    while (stmt)
+    {
+        if (stmt_always_returns(stmt))
+        {
+            return 1;
+        }
+        stmt = stmt->next;
+    }
+    return 0;
+}
+
 static void check_function(TypeChecker *tc, ASTNode *node)
 {
     // Just to suppress the warning.
@@ -308,6 +558,25 @@ static void check_function(TypeChecker *tc, ASTNode *node)
 
     check_node(tc, node->func.body);
 
+    // Control flow analysis: Check if non-void function always returns
+    const char *ret_type = node->func.ret_type;
+    int is_void = !ret_type || strcmp(ret_type, "void") == 0;
+
+    if (!is_void && node->func.body)
+    {
+        if (!block_always_returns(node->func.body))
+        {
+            char msg[256];
+            snprintf(msg, sizeof(msg), "Function '%s' may not return a value on all code paths",
+                     node->func.name);
+
+            const char *hints[] = {"Ensure all execution paths return a value",
+                                   "Consider adding a default return at the end of the function",
+                                   NULL};
+            tc_error_with_hints(tc, node->token, msg, hints);
+        }
+    }
+
     tc_exit_scope(tc);
     tc->current_func = NULL;
 }
@@ -315,12 +584,7 @@ static void check_function(TypeChecker *tc, ASTNode *node)
 static void check_expr_var(TypeChecker *tc, ASTNode *node)
 {
     ZenSymbol *sym = tc_lookup(tc, node->var_ref.name);
-    if (!sym)
-    {
-        // Check global functions/contexts if not found in locals
-        // This is a naive check.
-        // We really want to warn here if it's truly unknown.
-    }
+
     if (sym && sym->type_info)
     {
         node->type_info = sym->type_info;
@@ -373,7 +637,10 @@ static void check_node(TypeChecker *tc, ASTNode *node)
             {
                 char msg[256];
                 snprintf(msg, 255, "Return without value in function returning '%s'", ret_type);
-                tc_error(tc, node->token, msg);
+
+                const char *hints[] = {"This function declares a non-void return type",
+                                       "Return a value of the expected type", NULL};
+                tc_error_with_hints(tc, node->token, msg, hints);
             }
         }
         break;

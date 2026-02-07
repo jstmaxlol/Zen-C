@@ -666,6 +666,7 @@ Type *type_new(TypeKind kind);
 Type *type_new_ptr(Type *inner);
 int type_eq(Type *a, Type *b);
 int is_integer_type(Type *t);
+int is_float_type(Type *t);
 char *type_to_string(Type *t);
 char *type_to_c_string(Type *t);
 

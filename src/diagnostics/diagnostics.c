@@ -396,7 +396,13 @@ void zpanic_with_hints(Token t, const char *msg, const char *const *hints)
                 h++;
             }
         }
-        snprintf(full_msg, sizeof(full_msg), "%s%s", msg, combined_hints);
+        // Construct error message buffer
+        // char full_msg[4096]; // Removed redeclaration
+        int header_len = snprintf(full_msg, sizeof(full_msg), "%s", msg);
+        if (header_len < (int)sizeof(full_msg))
+        {
+            strncat(full_msg, combined_hints, sizeof(full_msg) - strlen(full_msg) - 1);
+        }
         g_parser_ctx->on_error(g_parser_ctx->error_callback_data, t, full_msg);
         return; // Recover!
     }
@@ -519,12 +525,98 @@ void zerror_with_suggestion(Token t, const char *msg, const char *suggestion)
         }
     }
 
-    if (g_parser_ctx && g_parser_ctx->on_error)
     {
         // Construct error message buffer
         char full_msg[1024];
         snprintf(full_msg, sizeof(full_msg), "%s (Suggestion: %s)", msg,
                  suggestion ? suggestion : "");
+        g_parser_ctx->on_error(g_parser_ctx->error_callback_data, t, full_msg);
+    }
+}
+
+void zerror_with_hints(Token t, const char *msg, const char *const *hints)
+{
+    char combined_hints[4096] = {0};
+    if (hints)
+    {
+        const char *const *h = hints;
+        while (*h)
+        {
+            if (combined_hints[0])
+            {
+                strncat(combined_hints, "\n", sizeof(combined_hints) - 1);
+            }
+            strncat(combined_hints, *h, sizeof(combined_hints) - strlen(combined_hints) - 1);
+            h++;
+        }
+    }
+
+    if (g_config.json_output)
+    {
+        emit_json("error", t, msg, combined_hints[0] ? combined_hints : NULL);
+        if (g_parser_ctx && g_parser_ctx->on_error)
+        {
+            char full_msg[4096];
+            int header_len = snprintf(full_msg, sizeof(full_msg), "%s\n", msg);
+            if (header_len < (int)sizeof(full_msg))
+            {
+                strncat(full_msg, combined_hints, sizeof(full_msg) - strlen(full_msg) - 1);
+            }
+            g_parser_ctx->on_error(g_parser_ctx->error_callback_data, t, full_msg);
+        }
+        return;
+    }
+
+    // Header.
+    fprintf(stderr, COLOR_RED "error: " COLOR_RESET COLOR_BOLD "%s" COLOR_RESET "\n", msg);
+
+    // Location.
+    fprintf(stderr, COLOR_BLUE "  --> " COLOR_RESET "%s:%d:%d\n", g_current_filename, t.line,
+            t.col);
+
+    // Context.
+    if (t.start)
+    {
+        const char *line_start = t.start - (t.col - 1);
+        const char *line_end = t.start;
+        while (*line_end && *line_end != '\n')
+        {
+            line_end++;
+        }
+        int line_len = line_end - line_start;
+
+        fprintf(stderr, COLOR_BLUE "   |\n" COLOR_RESET);
+        fprintf(stderr, COLOR_BLUE "%-3d| " COLOR_RESET "%.*s\n", t.line, line_len, line_start);
+        fprintf(stderr, COLOR_BLUE "   | " COLOR_RESET);
+        for (int i = 0; i < t.col - 1; i++)
+        {
+            fprintf(stderr, " ");
+        }
+        fprintf(stderr, COLOR_RED "^ here" COLOR_RESET "\n");
+
+        // Hints.
+        if (hints)
+        {
+            const char *const *h = hints;
+            while (*h)
+            {
+                fprintf(stderr, COLOR_BLUE "   |\n" COLOR_RESET);
+                fprintf(stderr, COLOR_CYAN "   = help: " COLOR_RESET "%s\n", *h);
+                h++;
+            }
+        }
+    }
+
+    if (g_parser_ctx && g_parser_ctx->on_error)
+    {
+        // Construct error message buffer
+        char full_msg[4096];
+        int header_len = snprintf(full_msg, sizeof(full_msg), "%s", msg);
+        if (header_len < (int)sizeof(full_msg))
+        {
+            strncat(full_msg, "\n", sizeof(full_msg) - strlen(full_msg) - 1);
+            strncat(full_msg, combined_hints, sizeof(full_msg) - strlen(full_msg) - 1);
+        }
         g_parser_ctx->on_error(g_parser_ctx->error_callback_data, t, full_msg);
     }
 }
