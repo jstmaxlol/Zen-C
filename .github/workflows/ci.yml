@@ -36,6 +36,10 @@ jobs:
             os: ubuntu-latest
             cc: zig cc
             setup_zig: true
+          - name: Linux TCC
+            os: ubuntu-latest
+            cc: tcc
+            install_tcc: true
           - name: macOS
             os: macos-15-intel
             cc: cc # System default (usually clang)
@@ -51,6 +55,10 @@ jobs:
       uses: goto-bus-stop/setup-zig@v2
       with:
         version: master
+
+    - name: Install TCC
+      if: matrix.install_tcc
+      run: sudo apt-get update && sudo apt-get install -y tcc
 
     - name: Build
       run: |

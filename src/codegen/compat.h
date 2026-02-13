@@ -4,7 +4,8 @@
 
 #ifdef __cplusplus
 /* C++ mode */
-#define ZC_AUTO auto                                ///< Auto type inference.
+#define ZC_AUTO auto ///< Auto type inference.
+#define ZC_AUTO_INIT(var, init) auto var = (init)
 #define ZC_CAST(T, x) static_cast<T>(x)             ///< Static cast.
 #define ZC_REINTERPRET(T, x) reinterpret_cast<T>(x) ///< Reinterpret cast.
 #define ZC_EXTERN_C extern "C"                      ///< Extern "C" linkage.
@@ -16,8 +17,10 @@
 /* C mode */
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202300L
 #define ZC_AUTO auto ///< C23 standard auto.
+#define ZC_AUTO_INIT(var, init) auto var = (init)
 #else
 #define ZC_AUTO __auto_type ///< GCC/Clang extension.
+#define ZC_AUTO_INIT(var, init) __auto_type var = (init)
 #endif
 #define ZC_CAST(T, x) ((T)(x))        ///< Explicit cast.
 #define ZC_REINTERPRET(T, x) ((T)(x)) ///< Reinterpret cast.
@@ -28,9 +31,10 @@
 
 #ifdef __TINYC__
 /* TCC compatibility */
-#ifndef __auto_type
-#define __auto_type __typeof__
-#endif
+#undef ZC_AUTO
+#undef ZC_AUTO_INIT
+#define ZC_AUTO /* Invalid in TCC for raw use */
+#define ZC_AUTO_INIT(var, init) __typeof__((init)) var = (init)
 
 #ifndef __builtin_expect
 #define __builtin_expect(x, v) (x)
@@ -59,9 +63,10 @@
 /* Centralized string definition for codegen emission */
 #define ZC_TCC_COMPAT_STR                                                                          \
     "#ifdef __TINYC__\n"                                                                           \
-    "#ifndef __auto_type\n"                                                                        \
-    "#define __auto_type __typeof__\n"                                                             \
-    "#endif\n"                                                                                     \
+    "#undef ZC_AUTO\n"                                                                             \
+    "#define ZC_AUTO __auto_type\n"                                                                \
+    "#undef ZC_AUTO_INIT\n"                                                                        \
+    "#define ZC_AUTO_INIT(var, init) __typeof__((init)) var = (init)\n"                            \
     "\n"                                                                                           \
     "#ifndef __builtin_expect\n"                                                                   \
     "#define __builtin_expect(x, v) (x)\n"                                                         \
@@ -69,6 +74,12 @@
     "\n"                                                                                           \
     "#ifndef __builtin_unreachable\n"                                                              \
     "#define __builtin_unreachable()\n"                                                            \
+    "#endif\n"                                                                                     \
+    "#else\n"                                                                                      \
+    "#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202300L\n"                               \
+    "#define ZC_AUTO_INIT(var, init) auto var = (init)\n"                                          \
+    "#else\n"                                                                                      \
+    "#define ZC_AUTO_INIT(var, init) __auto_type var = (init)\n"                                   \
     "#endif\n"                                                                                     \
     "#endif\n"
 

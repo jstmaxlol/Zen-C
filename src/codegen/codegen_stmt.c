@@ -189,16 +189,17 @@ void codegen_match_internal(ParserContext *ctx, ASTNode *node, FILE *out, int us
 
     if (is_self)
     {
-        fprintf(out, "ZC_AUTO _m_%d = ", id);
+        emit_auto_type(ctx, node->match_stmt.expr, node->token, out);
+        fprintf(out, " _m_%d = ", id);
         codegen_expression(ctx, node->match_stmt.expr, out);
         fprintf(out, "; ");
     }
     else if (has_ref_binding && is_lvalue_opt)
     {
         // Take address for ref bindings
-        fprintf(out, "ZC_AUTO _m_%d = &", id);
+        fprintf(out, "ZC_AUTO_INIT(_m_%d, &", id);
         codegen_expression(ctx, node->match_stmt.expr, out);
-        fprintf(out, "; ");
+        fprintf(out, "); ");
     }
     else if (has_ref_binding)
     {
@@ -206,12 +207,15 @@ void codegen_match_internal(ParserContext *ctx, ASTNode *node, FILE *out, int us
         emit_auto_type(ctx, node->match_stmt.expr, node->token, out);
         fprintf(out, " _temp_%d = ", id);
         codegen_expression(ctx, node->match_stmt.expr, out);
-        fprintf(out, "; ZC_AUTO _m_%d = &_temp_%d; ", id, id);
+        fprintf(out, "; ");
+
+        fprintf(out, "ZC_AUTO_INIT(_m_%d, &_temp_%d); ", id, id);
     }
     else
     {
         // No ref bindings: store value directly (not pointer)
-        fprintf(out, "ZC_AUTO _m_%d = ", id);
+        emit_auto_type(ctx, node->match_stmt.expr, node->token, out);
+        fprintf(out, " _m_%d = ", id);
         codegen_expression(ctx, node->match_stmt.expr, out);
         fprintf(out, "; ");
     }
@@ -332,31 +336,17 @@ void codegen_match_internal(ParserContext *ctx, ASTNode *node, FILE *out, int us
 
                 if (is_option)
                 {
-                    if (strstr(g_config.cc, "tcc"))
+                    if (is_r)
                     {
-                        if (is_r)
-                        {
-                            fprintf(out, "__typeof__(&_m_%d.val) %s = &_m_%d.val; ", id, bname, id);
-                        }
-                        else
-                        {
-                            fprintf(out, "__typeof__(_m_%d.val) %s = _m_%d.val; ", id, bname, id);
-                        }
+                        fprintf(out, "ZC_AUTO_INIT(%s, &_m_%d->val); ", bname, id);
+                    }
+                    else if (has_ref_binding)
+                    {
+                        fprintf(out, "ZC_AUTO_INIT(%s, _m_%d->val); ", bname, id);
                     }
                     else
                     {
-                        if (is_r)
-                        {
-                            fprintf(out, "ZC_AUTO %s = &_m_%d->val; ", bname, id);
-                        }
-                        else if (has_ref_binding)
-                        {
-                            fprintf(out, "ZC_AUTO %s = _m_%d->val; ", bname, id);
-                        }
-                        else
-                        {
-                            fprintf(out, "ZC_AUTO %s = _m_%d.val; ", bname, id);
-                        }
+                        fprintf(out, "ZC_AUTO_INIT(%s, _m_%d.val); ", bname, id);
                     }
                 }
                 else if (is_result)
@@ -367,33 +357,17 @@ void codegen_match_internal(ParserContext *ctx, ASTNode *node, FILE *out, int us
                         field = "err";
                     }
 
-                    if (strstr(g_config.cc, "tcc"))
+                    if (is_r)
                     {
-                        if (is_r)
-                        {
-                            fprintf(out, "__typeof__(&_m_%d->%s) %s = &_m_%d->%s; ", id, field,
-                                    bname, id, field);
-                        }
-                        else
-                        {
-                            fprintf(out, "__typeof__(_m_%d->%s) %s = _m_%d->%s; ", id, field, bname,
-                                    id, field);
-                        }
+                        fprintf(out, "ZC_AUTO_INIT(%s, &_m_%d->%s); ", bname, id, field);
+                    }
+                    else if (has_ref_binding)
+                    {
+                        fprintf(out, "ZC_AUTO_INIT(%s, _m_%d->%s); ", bname, id, field);
                     }
                     else
                     {
-                        if (is_r)
-                        {
-                            fprintf(out, "ZC_AUTO %s = &_m_%d->%s; ", bname, id, field);
-                        }
-                        else if (has_ref_binding)
-                        {
-                            fprintf(out, "ZC_AUTO %s = _m_%d->%s; ", bname, id, field);
-                        }
-                        else
-                        {
-                            fprintf(out, "ZC_AUTO %s = _m_%d.%s; ", bname, id, field);
-                        }
+                        fprintf(out, "ZC_AUTO_INIT(%s, _m_%d.%s); ", bname, id, field);
                     }
                 }
                 else
@@ -413,15 +387,16 @@ void codegen_match_internal(ParserContext *ctx, ASTNode *node, FILE *out, int us
                         // Tuple destructuring: data.Variant.vI
                         if (is_r)
                         {
-                            fprintf(out, "ZC_AUTO %s = &_m_%d->data.%s.v%d; ", bname, id, v, i);
+                            fprintf(out, "ZC_AUTO_INIT(%s, &_m_%d->data.%s.v%d); ", bname, id, v,
+                                    i);
                         }
                         else if (has_ref_binding)
                         {
-                            fprintf(out, "ZC_AUTO %s = _m_%d->data.%s.v%d; ", bname, id, v, i);
+                            fprintf(out, "ZC_AUTO_INIT(%s, _m_%d->data.%s.v%d); ", bname, id, v, i);
                         }
                         else
                         {
-                            fprintf(out, "ZC_AUTO %s = _m_%d.data.%s.v%d; ", bname, id, v, i);
+                            fprintf(out, "ZC_AUTO_INIT(%s, _m_%d.data.%s.v%d); ", bname, id, v, i);
                         }
                     }
                     else
@@ -429,15 +404,15 @@ void codegen_match_internal(ParserContext *ctx, ASTNode *node, FILE *out, int us
                         // Single destructuring: data.Variant
                         if (is_r)
                         {
-                            fprintf(out, "ZC_AUTO %s = &_m_%d->data.%s; ", bname, id, v);
+                            fprintf(out, "ZC_AUTO_INIT(%s, &_m_%d->data.%s); ", bname, id, v);
                         }
                         else if (has_ref_binding)
                         {
-                            fprintf(out, "ZC_AUTO %s = _m_%d->data.%s; ", bname, id, v);
+                            fprintf(out, "ZC_AUTO_INIT(%s, _m_%d->data.%s); ", bname, id, v);
                         }
                         else
                         {
-                            fprintf(out, "ZC_AUTO %s = _m_%d.data.%s; ", bname, id, v);
+                            fprintf(out, "ZC_AUTO_INIT(%s, _m_%d.data.%s); ", bname, id, v);
                         }
                     }
                 }

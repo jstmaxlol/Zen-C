@@ -62,6 +62,7 @@ void emit_preamble(ParserContext *ctx, FILE *out)
         {
             // For C++: define ZC_AUTO as auto, include compat.h macros inline
             fputs("#define ZC_AUTO auto\n", out);
+            fputs("#define ZC_AUTO_INIT(var, init) auto var = (init)\n", out);
             fputs("#define ZC_CAST(T, x) static_cast<T>(x)\n", out);
             // C++ _z_str via overloads
             fputs("inline const char* _z_bool_str(bool b) { return b ? \"true\" : \"false\"; }\n",
@@ -88,8 +89,10 @@ void emit_preamble(ParserContext *ctx, FILE *out)
             // C mode
             fputs("#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202300L\n", out);
             fputs("#define ZC_AUTO auto\n", out);
+            fputs("#define ZC_AUTO_INIT(var, init) auto var = (init)\n", out);
             fputs("#else\n", out);
             fputs("#define ZC_AUTO __auto_type\n", out);
+            fputs("#define ZC_AUTO_INIT(var, init) __auto_type var = (init)\n", out);
             fputs("#endif\n", out);
             fputs("#define ZC_CAST(T, x) ((T)(x))\n", out);
             fputs(ZC_TCC_COMPAT_STR, out);
@@ -1112,10 +1115,8 @@ void print_type_defs(ParserContext *ctx, FILE *out, ASTNode *nodes)
         }
         fprintf(out, "#define Vec_push(v, i) _z_vec_push(&(v), (void*)(long)(i))\n");
 
-        fprintf(out, "#define _z_check_bounds(index, limit) ({ ZC_AUTO _i = "
-                     "(index); if(_i < 0 "
-                     "|| _i >= (limit)) { fprintf(stderr, \"Index out of bounds: "
-                     "%%ld (limit "
+        fprintf(out, "#define _z_check_bounds(index, limit) ({ ZC_AUTO_INIT(_i, index); if(_i < 0 "
+                     "|| _i >= (limit)) { fprintf(stderr, \"Index out of bounds: %%ld (limit "
                      "%%d)\\n\", (long)_i, (int)(limit)); exit(1); } _i; })\n");
     }
     else

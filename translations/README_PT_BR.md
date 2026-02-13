@@ -1359,12 +1359,9 @@ zc run app.zc --cc zig
 | **GCC** | **100% (Completo)** | Todas as Funcionalidades | Nenhuma. |
 | **Clang** | **100% (Completo)** | Todas as Funcionalidades | Nenhuma. |
 | **Zig** | **100% (Completo)** | Todas as Funcionalidades | Nenhuma. Usa `zig cc` como compilador C drop-in. |
-| **TCC** | **~70% (Básico)** | Sintaxe Básica, Genéricos, Traits | Sem `__auto_type`, Sem ASM Intel, Sem Funções Aninhadas. |
+| **TCC** | **98% (Alto)** | Estruturas, Genéricos, Traits, Pattern Matching | Sem ASM Intel, Sem `__attribute__((constructor))`. |
 
 </details>
-
-> [!TIP]
-> **Recomendação:** Use **GCC**, **Clang**, ou **Zig** para builds de produção. TCC é excelente para prototipagem rápida devido à sua velocidade de compilação, mas perde algumas extensões C avançadas nas quais Zen C se baseia para suporte completo de funcionalidades.
 
 ### Build com Zig
 

@@ -706,12 +706,11 @@ void emit_auto_type(ParserContext *ctx, ASTNode *init_expr, Token t, FILE *out)
     }
     else
     {
-        if (strstr(g_config.cc, "tcc"))
+        if (strstr(g_config.cc, "tcc") && init_expr)
         {
-            zpanic_with_suggestion(t,
-                                   "Type inference failed for variable initialization and TCC does "
-                                   "not support __auto_type",
-                                   "Please specify the type explicitly: 'var x: Type = ...'");
+            fprintf(out, "__typeof__((");
+            codegen_expression(ctx, init_expr, out);
+            fprintf(out, "))");
         }
         else
         {

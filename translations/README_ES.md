@@ -1405,15 +1405,12 @@ zc run app.zc --cc zig
 
 | Compilador | Tasa de Acierto | Características Soportadas | Limitaciones Conocidas |
 |:---|:---:|:---|:---|
-| **GCC** | **100% (Completo)** | Todas las Características | Ninguna. |
-| **Clang** | **100% (Completo)** | Todas las Características | Ninguna. |
-| **Zig** | **100% (Completo)** | Todas las Características | Ninguna. Usa `zig cc` como reemplazo directo del compilador C. |
-| **TCC** | **~70% (Básico)** | Sintaxis Básica, Genéricos, Traits | Sin `__auto_type`, Sin ASM Intel, Sin funciones anidadas. |
+| **GCC** | **100% (Completo)** | Todas las características | Ninguna. |
+| **Clang** | **100% (Completo)** | Todas las características | Ninguna. |
+| **Zig** | **100% (Completo)** | Todas las características | Ninguna. Usa `zig cc` como compilador C. |
+| **TCC** | **98% (Alto)** | Estructuras, Genéricos, Traits, Coincidencia de Patrones | Sin ASM Intel, Sin `__attribute__((constructor))`. |
 
 </details>
-
-> [!TIP]
-> **Recomendación:** Usa **GCC**, **Clang** o **Zig** para construcciones de producción. TCC es excelente para el prototipado rápido debido a su velocidad de compilación, pero le faltan algunas extensiones de C avanzadas en las que confía Zen C para el soporte total de características.
 
 ### Construyendo con Zig
 

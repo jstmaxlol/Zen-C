@@ -39,6 +39,18 @@ fi
 while read -r test_file; do
     [ -e "$test_file" ] || continue
 
+    # Skip tests known to fail with TCC
+    if [[ "$CC_NAME" == *"tcc"* ]]; then
+        if [[ "$test_file" == *"test_intel.zc"* ]]; then
+            echo "Skipping $test_file (Intel assembly not supported by TCC)"
+            continue
+        fi
+        if [[ "$test_file" == *"test_attributes.zc"* ]]; then
+            echo "Skipping $test_file (Constructor attribute not supported by TCC)"
+            continue
+        fi
+    fi
+
     echo -n "Testing $test_file... "
     
     output=$($ZC run "$test_file" "$@" 2>&1)
